@@ -48,6 +48,7 @@ const InstagramAccountSchema = new mongoose.Schema(
 );
 
 // Main User Schema
+
 const UserSchema = new mongoose.Schema(
   {
     email: {
@@ -60,6 +61,11 @@ const UserSchema = new mongoose.Schema(
     passwordHash: {
       type: String,
       required: true,
+      trim: true
+    },
+    passwordHash: {
+      type: String,
+      required: true
     },
     name: {
       type: String,
@@ -162,5 +168,26 @@ UserSchema.methods.clearRefreshTokens = function () {
 
 // Create and export User model
 const User = mongoose.model("User", UserSchema);
+
+export default User;
+      trim: true
+    },
+    plan: {
+      type: String,
+      enum: ['free', 'starter', 'pro', 'agency'],
+      default: 'free'
+    },
+    instagramAccounts: [],
+    billingCustomerId: {
+      type: String,
+      default: null
+    }
+  },
+  {
+    timestamps: { createdAt: 'createdAt', updatedAt: false }
+  }
+);
+
+const User = mongoose.model('User', UserSchema); 
 
 export default User;

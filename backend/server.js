@@ -1,6 +1,11 @@
 // ============================================
 // Server Entry Point
 // ============================================
+import express from "express";
+import dotenv from 'dotenv'
+import connectDB from "./config/db.js";
+import authRoutes from './routes/authRoutes.js'
+dotenv.config()
 
 import dotenv from "dotenv";
 import mongoose from "mongoose";
@@ -27,6 +32,12 @@ const startServer = async () => {
 
     await mongoose.connect(mongoUrl);
     console.log("✅ MongoDB Connected!");
+app.use('/auth', authRoutes);
+
+app.get("/", (req, res) => {
+  res.send("Server is running!");
+});
+connectDB()
 
     // Start server
     app.listen(PORT, () => {
