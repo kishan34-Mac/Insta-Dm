@@ -1,14 +1,19 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Social Media Auto DM SaaS Backend",
+  "main": "server.js",
   "type": "module",
   "scripts": {
     "start": "node server.js",
     "dev":"nodemon server.js"
   },
-  "keywords": [],
+  "keywords": [
+    "instagram",
+    "dm",
+    "automation",
+    "saas"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
