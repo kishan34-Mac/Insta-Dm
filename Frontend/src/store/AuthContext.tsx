@@ -1,27 +1,54 @@
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
 import { authApi, type AuthPayload, type AuthUser } from "@/api/auth";
 
-const STORAGE_KEY = "reel2revenue.auth";
+const STORAGE_KEY = "athenura.auth";
+const LEGACY_STORAGE_KEYS = ["Insta Dm.auth", "reel2revenue.auth"];
 
 type AuthState = {
   user: AuthUser | null;
   accessToken: string | null;
   refreshToken: string | null;
   login: (input: { email: string; password: string }) => Promise<void>;
-  register: (input: { name: string; email: string; password: string }) => Promise<void>;
+  register: (input: {
+    name: string;
+    email: string;
+    password: string;
+  }) => Promise<void>;
   logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthState | null>(null);
 
 const readStoredAuth = (): AuthPayload | null => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    localStorage.removeItem(STORAGE_KEY);
-    return null;
+  for (const key of [STORAGE_KEY, ...LEGACY_STORAGE_KEYS]) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+
+      const payload = JSON.parse(raw) as AuthPayload;
+      if (!payload?.user || !payload?.accessToken) {
+        localStorage.removeItem(key);
+        continue;
+      }
+
+      if (key !== STORAGE_KEY) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        localStorage.removeItem(key);
+      }
+
+      return payload;
+    } catch {
+      localStorage.removeItem(key);
+    }
   }
+
+  return null;
 };
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -54,7 +81,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     if (auth?.accessToken) {
-      await authApi.logout(auth.accessToken, auth.refreshToken ?? undefined).catch(() => undefined);
+      await authApi
+        .logout(auth.accessToken, auth.refreshToken ?? undefined)
+        .catch(() => undefined);
     }
     persistAuth(null);
   }, [auth, persistAuth]);

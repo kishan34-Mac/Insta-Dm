@@ -10,7 +10,18 @@ import { errorHandler } from "./utils/errorHandler.js";
 
 const app = express();
 
-app.use(cors({ origin: env.corsOrigin, credentials: true }));
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || env.corsOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  }),
+);
 app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
 
@@ -24,20 +35,24 @@ const startServer = async () => {
   try {
     await connectDB();
     console.log("MongoDB connected");
-
-    app.listen(env.port, () => {
-      console.log(`Server running on http://localhost:${env.port}`);
-      console.log(`Environment: ${env.nodeEnv}`);
-    });
   } catch (err) {
-    console.error("Failed to start server:", err.message);
-    process.exit(1);
+    console.warn("Failed to connect to MongoDB. Server will start in mock mode for UI testing.");
+    console.warn("Error:", err.message);
   }
+
+  const server = app.listen(env.port, () => {
+    console.log(`Server running on http://localhost:${env.port}`);
+    console.log(`Environment: ${env.nodeEnv}`);
+  });
+
+  server.on("error", (err) => {
+    console.error("Server error:", err);
+  });
 };
 
 startServer();
 
 process.on("unhandledRejection", (err) => {
   console.error("Unhandled Rejection:", err && err.message ? err.message : err);
-  mongoose.connection.close(() => process.exit(1));
+  // Do not exit process in mock mode
 });

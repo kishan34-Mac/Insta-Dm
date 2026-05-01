@@ -1,4 +1,6 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+const API_BASE_URL = (
+  import.meta.env.VITE_API_URL ?? "http://localhost:5001"
+).replace(/\/$/, "");
 
 type ApiOptions = RequestInit & {
   token?: string | null;
@@ -19,14 +21,24 @@ export class ApiError extends Error {
 export async function apiRequest<T>(path: string, options: ApiOptions = {}): Promise<T> {
   const { token, headers, ...requestOptions } = options;
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...requestOptions,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...headers,
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...requestOptions,
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...headers,
+      },
+    });
+  } catch (error) {
+    throw new ApiError(
+      "Unable to reach the server. Check that the backend is running.",
+      0,
+      error,
+    );
+  }
 
   const payload = await response.json().catch(() => ({}));
 

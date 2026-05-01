@@ -227,6 +227,7 @@
   .text-balance { text-wrap: balance; }
   .animate-float { animation: float 6s ease-in-out infinite; }
   .animate-float-slow { animation: float 9s ease-in-out infinite; }
+  .animate-logo-float { animation: logo-float 4.5s ease-in-out infinite; }
   .animate-shimmer {
     background: linear-gradient(90deg, transparent, hsl(var(--foreground) / 0.08), transparent);
     background-size: 200% 100%;
@@ -237,6 +238,16 @@
 @keyframes float {
   0%, 100% { transform: translateY(0px) }
   50% { transform: translateY(-14px) }
+}
+@keyframes logo-float {
+  0%, 100% {
+    filter: drop-shadow(0 8px 18px hsl(var(--primary) / 0.12));
+    transform: translateY(0);
+  }
+  50% {
+    filter: drop-shadow(0 14px 24px hsl(var(--accent) / 0.2));
+    transform: translateY(-3px);
+  }
 }
 @keyframes shimmer {
   0% { background-position: -200% 0; }
