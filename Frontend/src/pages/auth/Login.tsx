@@ -1,6 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { ArrowRight, Loader2 } from "lucide-react";
@@ -9,23 +8,24 @@ import { GoogleButton } from "@/components/auth/GoogleButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-const schema = z.object({
-  email: z.string().trim().email("Enter a valid email").max(255),
-  password: z.string().min(8, "At least 8 characters").max(100),
-});
-type FormData = z.infer<typeof schema>;
+import { useAuth } from "@/store/AuthContext";
+import { loginSchema, type LoginFormData } from "@/validators/auth.validator";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
-    resolver: zodResolver(schema),
+  const { login } = useAuth();
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = async (_data: FormData) => {
-    await new Promise((r) => setTimeout(r, 800));
-    toast.success("Welcome back!");
-    navigate("/dashboard");
+  const onSubmit = async (data: LoginFormData) => {
+    try {
+      await login(data);
+      toast.success("Welcome back!");
+      navigate("/dashboard");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to sign in");
+    }
   };
 
   return (
@@ -43,7 +43,7 @@ export default function Login() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <div>
           <Label htmlFor="email">Email</Label>
           <Input id="email" type="email" placeholder="you@brand.com" className="mt-1.5" {...register("email")} />

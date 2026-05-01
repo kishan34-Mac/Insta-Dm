@@ -1,5 +1,5 @@
-import { Link, Outlet, useLocation } from "react-router-dom";
-import { LayoutDashboard, Megaphone, BarChart3, Users, Settings as SettingsIcon, Sparkles, Bell, Search } from "lucide-react";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { BarChart3, Bell, LayoutDashboard, LogOut, Megaphone, Search, Settings as SettingsIcon, Sparkles, Users } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -9,6 +9,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/store/AuthContext";
 
 const items = [
   { title: "Overview", url: "/dashboard", icon: LayoutDashboard, end: true },
@@ -70,15 +71,28 @@ function AppSidebar() {
 
 export default function DashboardLayout() {
   const loc = useLocation();
+  const navigate = useNavigate();
+  const { logout, user } = useAuth();
   const title = items.find((i) => (i.end ? i.url === loc.pathname : loc.pathname.startsWith(i.url)))?.title ?? "Dashboard";
+  const initials = user?.name
+    ?.split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "JD";
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
+      <div className="min-h-screen flex w-full max-w-full overflow-x-hidden bg-background">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <header className="h-16 border-b border-border flex items-center gap-2 sm:gap-3 px-3 sm:px-6 sticky top-0 z-30 bg-background/80 backdrop-blur-xl">
-            <SidebarTrigger />
+            <SidebarTrigger className="shrink-0" />
             <div className="hidden sm:block min-w-0">
               <h1 className="font-display font-semibold tracking-tight truncate">{title}</h1>
             </div>
@@ -89,12 +103,15 @@ export default function DashboardLayout() {
               </div>
               <Button variant="ghost" size="icon" className="hidden sm:inline-flex"><Bell className="h-4 w-4" /></Button>
               <ThemeToggle />
+              <Button variant="ghost" size="icon" className="hidden sm:inline-flex" onClick={handleLogout}>
+                <LogOut className="h-4 w-4" />
+              </Button>
               <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-gradient-primary text-primary-foreground text-xs">JD</AvatarFallback>
+                <AvatarFallback className="bg-gradient-primary text-primary-foreground text-xs">{initials}</AvatarFallback>
               </Avatar>
             </div>
           </header>
-          <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-x-hidden">
+          <main className="flex-1 w-full min-w-0 overflow-x-hidden p-4 sm:p-6 md:p-8">
             <Outlet />
           </main>
         </div>

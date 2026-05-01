@@ -1,8 +1,8 @@
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
-import User from "../models/user.js";
-import { encrypt, decrypt } from "../utils/encryption.js";
-import { generateTokens } from "../utils/jwt.js";
+import env from "../config/env.js";
+import User from "../models/User.js";
+import { encrypt } from "../utils/encryption.js";
 import { AppError } from "../utils/errorHandler.js";
 
 /**
@@ -16,8 +16,8 @@ import { AppError } from "../utils/errorHandler.js";
 // @route   GET /auth/instagram/connect
 export const connectInstagram = async (req, res, next) => {
   try {
-    const clientId = process.env.INSTAGRAM_CLIENT_ID;
-    const redirectUri = process.env.INSTAGRAM_REDIRECT_URI;
+    const clientId = env.instagramClientId;
+    const redirectUri = env.instagramRedirectUri;
 
     if (!clientId || !redirectUri) {
       throw new AppError("Instagram OAuth not configured", 500);
@@ -29,7 +29,7 @@ export const connectInstagram = async (req, res, next) => {
     // Store state in session/cookie for validation (use signed cookie)
     res.cookie("ig_oauth_state", state, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: env.nodeEnv === "production",
       sameSite: "lax",
       maxAge: 15 * 60 * 1000, // 15 minutes
     });
@@ -139,14 +139,12 @@ export const instagramCallback = async (req, res, next) => {
     await user.save();
 
     // Redirect to frontend success page
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-    res.redirect(`${frontendUrl}/dashboard/settings?connected=true`);
+    res.redirect(`${env.frontendUrl}/dashboard/settings?connected=true`);
   } catch (err) {
     console.error("Instagram OAuth Callback Error:", err.message);
     // Redirect to frontend error page
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
     res.redirect(
-      `${frontendUrl}/dashboard/settings?error=${encodeURIComponent(err.message)}`,
+      `${env.frontendUrl}/dashboard/settings?error=${encodeURIComponent(err.message)}`,
     );
   }
 };
@@ -154,9 +152,9 @@ export const instagramCallback = async (req, res, next) => {
 // Helper: Exchange code for short-lived access token
 const exchangeCodeForToken = async (code) => {
   try {
-    const clientId = process.env.INSTAGRAM_CLIENT_ID;
-    const clientSecret = process.env.INSTAGRAM_CLIENT_SECRET;
-    const redirectUri = process.env.INSTAGRAM_REDIRECT_URI;
+    const clientId = env.instagramClientId;
+    const clientSecret = env.instagramClientSecret;
+    const redirectUri = env.instagramRedirectUri;
 
     const response = await axios.get(
       "https://graph.facebook.com/v19.0/oauth/access_token",
@@ -181,8 +179,8 @@ const exchangeCodeForToken = async (code) => {
 // Helper: Exchange short-lived token for long-lived token
 const exchangeForLongLivedToken = async (shortLivedToken) => {
   try {
-    const clientId = process.env.INSTAGRAM_CLIENT_ID;
-    const clientSecret = process.env.INSTAGRAM_CLIENT_SECRET;
+    const clientId = env.instagramClientId;
+    const clientSecret = env.instagramClientSecret;
 
     const response = await axios.get(
       "https://graph.facebook.com/v19.0/oauth/access_token",

@@ -1,6 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { ArrowRight, Loader2 } from "lucide-react";
@@ -9,24 +8,24 @@ import { GoogleButton } from "@/components/auth/GoogleButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-const schema = z.object({
-  name: z.string().trim().min(2, "Enter your name").max(80),
-  email: z.string().trim().email("Enter a valid email").max(255),
-  password: z.string().min(8, "At least 8 characters").max(100),
-});
-type FormData = z.infer<typeof schema>;
+import { useAuth } from "@/store/AuthContext";
+import { signupSchema, type SignupFormData } from "@/validators/auth.validator";
 
 export default function Signup() {
   const navigate = useNavigate();
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
-    resolver: zodResolver(schema),
+  const { register: registerUser } = useAuth();
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<SignupFormData>({
+    resolver: zodResolver(signupSchema),
   });
 
-  const onSubmit = async (_data: FormData) => {
-    await new Promise((r) => setTimeout(r, 800));
-    toast.success("Account created! Redirecting…");
-    navigate("/dashboard");
+  const onSubmit = async (data: SignupFormData) => {
+    try {
+      await registerUser(data);
+      toast.success("Account created! Redirecting...");
+      navigate("/dashboard");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to create account");
+    }
   };
 
   return (
@@ -44,7 +43,7 @@ export default function Signup() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <div>
           <Label htmlFor="name">Full name</Label>
           <Input id="name" placeholder="Jane Doe" className="mt-1.5" {...register("name")} />

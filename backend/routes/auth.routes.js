@@ -1,45 +1,30 @@
 import express from "express";
 import {
-  register,
-  login,
   getMe,
-  refresh,
+  login,
   logout,
+  refresh,
+  register,
 } from "../controllers/auth.controller.js";
-import { protect } from "../middlewares/auth.middleware.js";
-
-/**
- * Authentication Routes
- * Handles user registration, login, and token management
- */
-
-//
+import { protect } from "../middleware/auth.middleware.js";
+import {
+  loginSchema,
+  logoutSchema,
+  refreshTokenSchema,
+  registerSchema,
+  validate,
+} from "../validators/auth.validator.js";
 
 const router = express.Router();
 
-// @route   POST /auth/register
-// @desc   Register new user
-// @access Public
-router.post("/register", register);
+router.post("/register", validate(registerSchema), register);
 
-// @route   POST /auth/login
-// @desc   Login user
-// @access Public
-router.post("/login", login);
+router.post("/login", validate(loginSchema), login);
 
-// @route   GET /auth/me
-// @desc   Get current user
-// @access Private
 router.get("/me", protect, getMe);
 
-// @route   POST /auth/refresh
-// @desc   Refresh access token
-// @access Public
-router.post("/refresh", refresh);
+router.post("/refresh", validate(refreshTokenSchema), refresh);
 
-// @route   POST /auth/logout
-// @desc   Logout user
-// @access Private
-router.post("/logout", protect, logout);
+router.post("/logout", protect, validate(logoutSchema), logout);
 
 export default router;

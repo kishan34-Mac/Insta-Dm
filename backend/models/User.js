@@ -1,5 +1,5 @@
-import mongoose from "mongoose";
 import bcrypt from "bcrypt";
+import mongoose from "mongoose";
 
 const InstagramAccountSchema = new mongoose.Schema(
   {
@@ -22,16 +22,20 @@ const UserSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
+      match: [/^\S+@\S+\.\S+$/, "Please provide a valid email address"],
+      maxlength: 255,
     },
     passwordHash: {
       type: String,
       required: true,
-      trim: true,
+      minlength: 8,
     },
     name: {
       type: String,
       required: true,
       trim: true,
+      minlength: 2,
+      maxlength: 80,
     },
     plan: {
       type: String,
@@ -54,7 +58,6 @@ const UserSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-UserSchema.index({ email: 1 });
 UserSchema.index({ plan: 1 });
 
 UserSchema.pre("save", async function preSave(next) {
