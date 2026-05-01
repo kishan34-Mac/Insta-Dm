@@ -1,6 +1,6 @@
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
-import User from "../models/User.js";
+import User from "../models/user.js";
 import { encrypt, decrypt } from "../utils/encryption.js";
 import { generateTokens } from "../utils/jwt.js";
 import { AppError } from "../utils/errorHandler.js";
