@@ -1,52 +1,52 @@
-import express from "express";
-
-import connectDB from "./config/db.js";
-import authRoutes from "./routes/authRoutes.js";
-
-import dotenv from "dotenv";
-import mongoose from "mongoose";
+import express from 'express';
+import dotenv from 'dotenv';
+import connectDB from './config/db.js';
+import authRoutes from './routes/authRoutes.js';
+import mongoose from 'mongoose';
 
 dotenv.config();
 
 const PORT = process.env.PORT || 3000;
-const app = express()
+import express from 'express';
+import dotenv from 'dotenv';
+import connectDB from './config/db.js';
+import authRoutes from './routes/authRoutes.js';
+import mongoose from 'mongoose';
+
+dotenv.config();
+
+const PORT = process.env.PORT || 3000;
+const app = express();
+
+app.use(express.json());
+app.use('/auth', authRoutes);
 
 const startServer = async () => {
   try {
-    // Connect to MongoDB
-    const mongoUrl = process.env.MONGO_URL;
-    if (!mongoUrl) {
-      throw new Error("MONGO_URL is not defined in environment variables");
+    // Ensure MONGO_URL is set
+    if (!process.env.MONGO_URL) {
+      throw new Error('MONGO_URL is not defined in environment variables');
     }
 
-    await mongoose.connect(mongoUrl);
-    console.log("✅ MongoDB Connected!");
-    app.use("/auth", authRoutes);
+    await connectDB();
+    console.log('✅ MongoDB Connected!');
 
-    app.get("/", (req, res) => {
-      res.send("Server is running!");
-    });
-    connectDB();
+    app.get('/', (req, res) => res.send('Server is running!'));
 
-    // Start server
     app.listen(PORT, () => {
       console.log(`✅ Server running on http://localhost:${PORT}`);
-      console.log(`✅ Environment: ${process.env.NODE_ENV || "development"}`);
+      console.log(`✅ Environment: ${process.env.NODE_ENV || 'development'}`);
     });
   } catch (err) {
-    console.error("❌ Failed to start server:", err.message);
+    console.error('❌ Failed to start server:', err.message);
     process.exit(1);
   }
 };
 
-// Start the server
 startServer();
 
 // Handle unhandled promise rejections
-process.on("unhandledRejection", (err) => {
-  console.error("❌ Unhandled Rejection:", err.message);
-  // Close server & exit process
-  mongoose.connection.close(() => {
-    process.exit(1);
-  });
+process.on('unhandledRejection', (err) => {
+  console.error('❌ Unhandled Rejection:', err && err.message ? err.message : err);
+  mongoose.connection.close(() => process.exit(1));
 });

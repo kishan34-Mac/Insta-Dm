@@ -1,14 +1,5 @@
 import mongoose from "mongoose";
 
-/**
- * Campaign Model
- * Handles DM campaign data
- */
-
-// ============================================
-// STEP 3: DATABASE MODELS - Campaign
-// ============================================
-
 const CampaignSchema = new mongoose.Schema(
   {
     user: {
