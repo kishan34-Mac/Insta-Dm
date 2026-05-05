@@ -51,7 +51,7 @@ export default function Leads() {
           <span className="text-xs text-muted-foreground ml-auto">{filtered.length} leads</span>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground border-b border-border">
@@ -59,7 +59,7 @@ export default function Leads() {
                 <th className="px-4 py-3 font-medium">Keyword</th>
                 <th className="px-4 py-3 font-medium">Campaign</th>
                 <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Captured</th>
+                <th className="px-4 py-3 font-medium text-right">Captured</th>
               </tr>
             </thead>
             <tbody>
@@ -72,15 +72,43 @@ export default function Leads() {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">#{l.keyword}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{l.campaign}</td>
+                  <td className="px-4 py-3 text-muted-foreground truncate max-w-[150px]">{l.campaign}</td>
                   <td className="px-4 py-3">
-                    <Badge variant="outline" className={cn("border", statusStyles[l.status])}>{l.status}</Badge>
+                    <Badge variant="outline" className={cn("border font-normal text-[11px]", statusStyles[l.status])}>{l.status}</Badge>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground text-xs">{l.when}</td>
+                  <td className="px-4 py-3 text-muted-foreground text-xs text-right">{l.when}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile List */}
+        <div className="md:hidden divide-y divide-border">
+          {filtered.map((l, i) => (
+            <div key={i} className="p-4 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-accent" />
+                  <div>
+                    <p className="font-medium text-sm">{l.username}</p>
+                    <p className="text-[11px] text-muted-foreground">{l.when}</p>
+                  </div>
+                </div>
+                <Badge variant="outline" className={cn("border font-normal text-[10px]", statusStyles[l.status])}>{l.status}</Badge>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <p className="text-muted-foreground text-[10px] uppercase">Keyword</p>
+                  <p className="font-medium mt-0.5">#{l.keyword}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-[10px] uppercase">Campaign</p>
+                  <p className="font-medium mt-0.5 truncate">{l.campaign}</p>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

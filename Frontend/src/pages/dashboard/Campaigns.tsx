@@ -1,17 +1,71 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Plus, Megaphone, MoreVertical, Play, Pause } from "lucide-react";
+import { Plus, Megaphone, MoreVertical, Play, Pause, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-
-const campaigns = [
-  { name: "Free Guide Funnel", status: "Active", keywords: ["guide", "ebook", "free"], dms: 1820, leads: 312, conv: "17.1%" },
-  { name: "Black Friday 2026", status: "Active", keywords: ["bf", "discount", "promo"], dms: 980, leads: 184, conv: "18.7%" },
-  { name: "Webinar Signup", status: "Paused", keywords: ["webinar", "join"], dms: 540, leads: 88, conv: "16.3%" },
-  { name: "Launch Reel #4", status: "Active", keywords: ["link", "info"], dms: 1240, leads: 201, conv: "16.2%" },
-];
+import { campaignApi, type Campaign } from "@/api/campaign";
+import { useAuth } from "@/store/AuthContext";
+import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function Campaigns() {
+  const { accessToken } = useAuth();
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchCampaigns = async () => {
+    if (!accessToken) return;
+    try {
+      const response = await campaignApi.getAll(accessToken);
+      setCampaigns(response.data);
+    } catch (error) {
+      toast.error("Failed to fetch campaigns");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCampaigns();
+  }, [accessToken]);
+
+  const toggleStatus = async (id: string) => {
+    if (!accessToken) return;
+    try {
+      const response = await campaignApi.toggleStatus(id, accessToken);
+      setCampaigns(campaigns.map(c => c._id === id ? response.data : c));
+      toast.success(`Campaign ${response.data.status}`);
+    } catch (error) {
+      toast.error("Failed to update status");
+    }
+  };
+
+  const deleteCampaign = async (id: string) => {
+    if (!accessToken) return;
+    if (!confirm("Are you sure you want to delete this campaign?")) return;
+    try {
+      await campaignApi.delete(id, accessToken);
+      setCampaigns(campaigns.filter(c => c._id !== id));
+      toast.success("Campaign deleted");
+    } catch (error) {
+      toast.error("Failed to delete campaign");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
@@ -28,7 +82,7 @@ export default function Campaigns() {
         <div className="grid md:grid-cols-2 gap-4">
           {campaigns.map((c, i) => (
             <motion.div
-              key={c.name}
+              key={c._id}
               initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               className="glass-card p-5 hover:border-primary/40 transition-colors group"
             >
@@ -36,9 +90,9 @@ export default function Campaigns() {
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold">{c.name}</h3>
-                    <Badge variant={c.status === "Active" ? "default" : "secondary"} className={c.status === "Active" ? "bg-success/15 text-success hover:bg-success/15" : ""}>
-                      {c.status === "Active" ? <span className="h-1.5 w-1.5 rounded-full bg-success mr-1.5 animate-pulse" /> : null}
-                      {c.status}
+                    <Badge variant={c.status === "active" ? "default" : "secondary"} className={c.status === "active" ? "bg-success/15 text-success hover:bg-success/15" : ""}>
+                      {c.status === "active" ? <span className="h-1.5 w-1.5 rounded-full bg-success mr-1.5 animate-pulse" /> : null}
+                      {c.status.charAt(0).toUpperCase() + c.status.slice(1)}
                     </Badge>
                   </div>
                   <div className="mt-2 flex flex-wrap gap-1.5">
@@ -48,16 +102,29 @@ export default function Campaigns() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    {c.status === "Active" ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleStatus(c._id)}>
+                    {c.status === "active" ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem asChild>
+                        <Link to={`/dashboard/campaigns/edit/${c._id}`}>Edit Campaign</Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => deleteCampaign(c._id)} className="text-destructive focus:text-destructive">
+                        <Trash2 className="h-4 w-4 mr-2" /> Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
               <div className="mt-5 grid grid-cols-3 gap-3 pt-4 border-t border-border">
-                <Stat label="DMs" v={c.dms.toLocaleString()} />
-                <Stat label="Leads" v={c.leads.toLocaleString()} />
-                <Stat label="Conv." v={c.conv} />
+                <Stat label="Sent" v={c.stats.totalSent.toLocaleString()} />
+                <Stat label="Delivered" v={c.stats.totalDelivered.toLocaleString()} />
+                <Stat label="Replied" v={c.stats.totalReplied.toLocaleString()} />
               </div>
             </motion.div>
           ))}

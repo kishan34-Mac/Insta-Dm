@@ -1,24 +1,95 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowLeft, Plus, GripVertical, X, Clock, MessageSquare, Image as ImageIcon, Save, Zap } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, Plus, GripVertical, X, Clock, MessageSquare, Image as ImageIcon, Save, Zap, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { campaignApi, type CampaignStep } from "@/api/campaign";
+import { useAuth } from "@/store/AuthContext";
 
 type Step = { id: string; type: "message" | "delay"; value: string };
 
 export default function CampaignBuilder() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { accessToken } = useAuth();
+  
   const [name, setName] = useState("Untitled campaign");
   const [keywords, setKeywords] = useState<string[]>(["guide"]);
   const [kw, setKw] = useState("");
+  const [postId, setPostId] = useState("");
   const [steps, setSteps] = useState<Step[]>([
     { id: "1", type: "message", value: "Hey! 👋 Thanks for commenting — here's your free guide ↓" },
     { id: "2", type: "delay", value: "30" },
     { id: "3", type: "message", value: "👉 reel2rev.com/guide" },
   ]);
+  
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (id && accessToken) {
+      loadCampaign();
+    }
+  }, [id, accessToken]);
+
+  const loadCampaign = async () => {
+    if (!accessToken || !id) return;
+    setLoading(true);
+    try {
+      const response = await campaignApi.getById(id, accessToken);
+      const c = response.data;
+      setName(c.name);
+      setKeywords(c.keywords);
+      setPostId(c.postId || "");
+      setSteps(c.steps.map((s, i) => ({
+        id: (i + 1).toString(),
+        type: s.type,
+        value: s.value
+      })));
+    } catch (error) {
+      toast.error("Failed to load campaign");
+      navigate("/dashboard/campaigns");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async (status: "draft" | "active" = "active") => {
+    if (!accessToken) return;
+    if (keywords.length === 0) {
+      toast.error("Add at least one keyword");
+      return;
+    }
+    
+    setSaving(true);
+    const campaignData = {
+      name,
+      keywords,
+      postId,
+      status,
+      steps: steps.map(s => ({ type: s.type, value: s.value })),
+      triggerType: "keyword" as const,
+    };
+
+    try {
+      if (id) {
+        await campaignApi.update(id, campaignData, accessToken);
+        toast.success("Campaign updated!");
+      } else {
+        await campaignApi.create(campaignData, accessToken);
+        toast.success("Campaign created!");
+      }
+      navigate("/dashboard/campaigns");
+    } catch (error) {
+      toast.error("Failed to save campaign");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const addStep = (type: Step["type"]) =>
     setSteps((s) => [...s, { id: crypto.randomUUID(), type, value: type === "delay" ? "60" : "" }]);
@@ -33,6 +104,14 @@ export default function CampaignBuilder() {
     setKw("");
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-fade-in max-w-6xl mx-auto">
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -42,9 +121,13 @@ export default function CampaignBuilder() {
                  className="font-display text-base sm:text-xl font-bold border-transparent bg-transparent hover:bg-secondary focus:bg-secondary px-2 h-10 max-w-md min-w-0" />
         </div>
         <div className="flex items-center gap-2 ml-auto">
-          <Button variant="outline" size="sm" className="hidden sm:inline-flex">Save draft</Button>
-          <Button variant="hero" size="sm" onClick={() => toast.success("Campaign published!")}>
-            <Save className="h-4 w-4" /> <span className="hidden sm:inline">Publish</span>
+          <Button variant="outline" size="sm" className="hidden sm:inline-flex" onClick={() => handleSave("draft")} disabled={saving}>
+            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            Save draft
+          </Button>
+          <Button variant="hero" size="sm" onClick={() => handleSave("active")} disabled={saving}>
+            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+            <span className="hidden sm:inline">{id ? "Update" : "Publish"}</span>
           </Button>
         </div>
       </div>
@@ -77,7 +160,7 @@ export default function CampaignBuilder() {
 
             <div className="mt-5">
               <Label className="text-xs">On post / reel</Label>
-              <Input placeholder="https://instagram.com/p/…" className="mt-1.5" />
+              <Input value={postId} onChange={(e) => setPostId(e.target.value)} placeholder="https://instagram.com/p/…" className="mt-1.5" />
               <p className="text-[11px] text-muted-foreground mt-1.5">Leave empty to apply to all new posts.</p>
             </div>
           </div>

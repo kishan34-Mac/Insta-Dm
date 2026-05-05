@@ -45,6 +45,10 @@ const App = () => (
                       path="campaigns/new"
                       element={<CampaignBuilder />}
                     />
+                    <Route
+                      path="campaigns/edit/:id"
+                      element={<CampaignBuilder />}
+                    />
                     <Route path="analytics" element={<Analytics />} />
                     <Route path="leads" element={<Leads />} />
                     <Route path="settings" element={<Settings />} />

@@ -1,14 +1,9 @@
 import jwt from "jsonwebtoken";
 import env from "../config/env.js";
 
-/**
- * JWT Utility Functions
- * Handles token generation and validation
- */
+ 
 
-//
-
-// Generate access token
+ 
 export const generateAccessToken = (userId) => {
   return jwt.sign({ userId }, env.jwtSecret, {
     expiresIn: env.jwtExpiresIn,

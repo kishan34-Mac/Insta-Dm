@@ -11,7 +11,7 @@ const InstagramAccountSchema = new mongoose.Schema(
     connectedAt: { type: Date, default: Date.now },
     isActive: { type: Boolean, default: true },
   },
-  { _id: false },
+  { _id: false }
 );
 
 const UserSchema = new mongoose.Schema(
@@ -25,11 +25,14 @@ const UserSchema = new mongoose.Schema(
       match: [/^\S+@\S+\.\S+$/, "Please provide a valid email address"],
       maxlength: 255,
     },
-    passwordHash: {
+
+    password: {
       type: String,
       required: true,
       minlength: 8,
+      select: false, // 🔐 never return password in queries
     },
+
     name: {
       type: String,
       required: true,
@@ -37,55 +40,57 @@ const UserSchema = new mongoose.Schema(
       minlength: 2,
       maxlength: 80,
     },
+
     plan: {
       type: String,
       enum: ["free", "starter", "pro", "agency"],
       default: "free",
     },
+
     instagramAccounts: {
       type: [InstagramAccountSchema],
       default: [],
     },
+
     billingCustomerId: {
       type: String,
       default: null,
     },
+
     refreshTokens: {
       type: [String],
       default: [],
+      select: false, // 🔐 hide tokens
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 UserSchema.index({ plan: 1 });
 
-UserSchema.pre("save", async function preSave(next) {
-  if (!this.isModified("passwordHash")) {
-    return next();
-  }
+/* 🔐 HASH PASSWORD BEFORE SAVE */
+UserSchema.pre("save", async function () {
+  if (!this.isModified("password")) return;
 
-  try {
-    const salt = await bcrypt.genSalt(12);
-    this.passwordHash = await bcrypt.hash(this.passwordHash, salt);
-    return next();
-  } catch (error) {
-    return next(error);
-  }
+  const salt = await bcrypt.genSalt(12);
+  this.password = await bcrypt.hash(this.password, salt);
 });
 
-UserSchema.methods.comparePassword = async function comparePassword(candidatePassword) {
-  return bcrypt.compare(candidatePassword, this.passwordHash);
+/* 🔑 COMPARE PASSWORD */
+UserSchema.methods.comparePassword = async function (candidatePassword) {
+  return bcrypt.compare(candidatePassword, this.password);
 };
 
-UserSchema.methods.toJSON = function toJSON() {
+/* 🧼 CLEAN RESPONSE */
+UserSchema.methods.toJSON = function () {
   const obj = this.toObject();
-  delete obj.passwordHash;
+
+  delete obj.password;
   delete obj.refreshTokens;
 
   if (Array.isArray(obj.instagramAccounts)) {
-    obj.instagramAccounts = obj.instagramAccounts.map((account) => ({
-      ...account,
+    obj.instagramAccounts = obj.instagramAccounts.map((acc) => ({
+      ...acc,
       accessToken: "********",
     }));
   }
@@ -93,23 +98,19 @@ UserSchema.methods.toJSON = function toJSON() {
   return obj;
 };
 
-UserSchema.methods.addRefreshToken = function addRefreshToken(token) {
-  if (!Array.isArray(this.refreshTokens)) {
-    this.refreshTokens = [];
-  }
-
+/* 🔄 REFRESH TOKEN HELPERS */
+UserSchema.methods.addRefreshToken = function (token) {
   if (this.refreshTokens.length >= 5) {
     this.refreshTokens = this.refreshTokens.slice(-4);
   }
-
   this.refreshTokens.push(token);
 };
 
-UserSchema.methods.removeRefreshToken = function removeRefreshToken(token) {
-  this.refreshTokens = (this.refreshTokens || []).filter((currentToken) => currentToken !== token);
+UserSchema.methods.removeRefreshToken = function (token) {
+  this.refreshTokens = this.refreshTokens.filter((t) => t !== token);
 };
 
-UserSchema.methods.clearRefreshTokens = function clearRefreshTokens() {
+UserSchema.methods.clearRefreshTokens = function () {
   this.refreshTokens = [];
 };
 

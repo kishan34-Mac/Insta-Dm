@@ -14,38 +14,41 @@ const CampaignSchema = new mongoose.Schema(
     },
     instagramAccount: {
       type: String, // Store IG user ID
-      required: true,
+      required: false,
     },
     status: {
       type: String,
       enum: ["draft", "active", "paused", "completed", "stopped"],
       default: "draft",
     },
-    // Message templates
-    messages: {
-      type: [
-        {
+    // Trigger settings
+    triggerType: {
+      type: String,
+      enum: ["comment", "keyword", "direct_message"],
+      default: "keyword",
+    },
+    keywords: {
+      type: [String],
+      default: [],
+    },
+    postId: {
+      type: String, // Specific post or empty for all
+      default: "",
+    },
+    // Message templates (steps)
+    steps: [
+      {
+        type: {
           type: String,
+          enum: ["message", "delay"],
+          required: true,
         },
-      ],
-      default: [],
-    },
-    // Delay between messages (in minutes)
-    delayMinutes: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
-    // Target leads (references to Lead model)
-    leads: {
-      type: [
-        {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "Lead",
+        value: {
+          type: String,
+          required: true,
         },
-      ],
-      default: [],
-    },
+      },
+    ],
     // Campaign stats
     stats: {
       totalSent: {
