@@ -1,61 +1,213 @@
-import cookieParser from "cookie-parser";
-import cors from "cors";
 import express from "express";
-import mongoose from "mongoose";
+import cors from "cors";
+import cookieParser from "cookie-parser";
+
 import connectDB from "./config/db.js";
 import env from "./config/env.js";
+
 import authRoutes from "./routes/auth.routes.js";
-import instagramRoutes from "./routes/instagram.routes.js";
 import campaignRoutes from "./routes/campaign.routes.js";
+import instagramRoutes from "./routes/instagram.routes.js";
+
 import { errorHandler } from "./utils/errorHandler.js";
+
+/* ==========================================
+   APP
+========================================== */
 
 const app = express();
 
+/* ==========================================
+   TRUST PROXY
+========================================== */
+
+app.set("trust proxy", 1);
+
+/* ==========================================
+   CORS
+========================================== */
+
+const allowedOrigins = [
+  "http://localhost:8080",
+  "http://localhost:5173",
+  "http://127.0.0.1:8080",
+  "http://127.0.0.1:5173",
+];
+
 app.use(
   cors({
-    origin(origin, callback) {
-      if (!origin || env.corsOrigins.includes(origin)) {
+    origin: function (origin, callback) {
+      // Allow requests without origin
+      if (!origin) {
         return callback(null, true);
       }
 
-      return callback(new Error("Not allowed by CORS"));
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(
+        new Error("CORS policy violation")
+      );
     },
+
     credentials: true,
-  }),
+
+    methods: [
+      "GET",
+      "POST",
+      "PUT",
+      "PATCH",
+      "DELETE",
+      "OPTIONS",
+    ],
+
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+    ],
+  })
 );
-app.use(express.json({ limit: "1mb" }));
+
+/* ==========================================
+   BODY PARSER
+========================================== */
+
+app.use(
+  express.json({
+    limit: "5mb",
+  })
+);
+
+app.use(
+  express.urlencoded({
+    extended: true,
+  })
+);
+
+/* ==========================================
+   COOKIES
+========================================== */
+
 app.use(cookieParser());
 
-app.get("/health", (req, res) => res.status(200).json({ success: true, message: "Server is healthy" }));
-app.use("/auth", authRoutes);
-app.use("/auth/instagram", instagramRoutes);
-app.use("/campaigns", campaignRoutes);
+/* ==========================================
+   ROOT
+========================================== */
+
+app.get("/", (req, res) => {
+  return res.status(200).json({
+    success: true,
+    message: "Athenura API running 🚀",
+  });
+});
+
+/* ==========================================
+   HEALTH CHECK
+========================================== */
+
+app.get("/health", (req, res) => {
+  return res.status(200).json({
+    success: true,
+    message: "Server healthy",
+    environment: env.nodeEnv,
+    timestamp: new Date(),
+  });
+});
+
+/* ==========================================
+   API ROUTES
+========================================== */
+
+app.use("/api/auth", authRoutes);
+
+app.use("/api/campaigns", campaignRoutes);
+
+app.use("/api/instagram", instagramRoutes);
+
+/* ==========================================
+   404 HANDLER
+========================================== */
+
+app.use((req, res) => {
+  return res.status(404).json({
+    success: false,
+    message: "API route not found",
+    path: req.originalUrl,
+  });
+});
+
+/* ==========================================
+   GLOBAL ERROR HANDLER
+========================================== */
 
 app.use(errorHandler);
 
+/* ==========================================
+   START SERVER
+========================================== */
 
-
-  const server = app.listen(env.port, () => {
-    console.log(`Server running on http://localhost:${env.port}`);
-     
-  });
-  const startServer = async () => {
+const startServer = async () => {
   try {
     await connectDB();
-    console.log("✅MongoDB connected");
-  } catch (err) {
-    console.warn("Failed to connect to MongoDB. Server will start in mock mode for UI testing.");
-    console.warn("❌Error:", err.message);
-  }
 
-  server.on("error", (err) => {
-    console.error("Server error:", err);
-  });
+    console.log("✅ MongoDB connected");
+
+    const server = app.listen(
+      env.port,
+      () => {
+        console.log(`
+🌍 Environment : ${env.nodeEnv}
+📡 Port        : ${env.port}
+🔗 URL         : http://localhost:${env.port}
+        `);
+      }
+    );
+
+    server.on("error", (err) => {
+      console.error(
+        "❌ Server Error:",
+        err
+      );
+    });
+  } catch (err) {
+    console.error(
+      "❌ MongoDB Connection Failed:",
+      err.message
+    );
+
+    process.exit(1);
+  }
 };
 
 startServer();
 
-process.on("unhandledRejection", (err) => {
-  console.error("Unhandled Rejection:", err && err.message ? err.message : err);
-  // Do not exit process in mock mode
-});
+/* ==========================================
+   UNHANDLED REJECTIONS
+========================================== */
+
+process.on(
+  "unhandledRejection",
+  (err) => {
+    console.error(
+      "❌ Unhandled Rejection:",
+      err?.message || err
+    );
+  }
+);
+
+/* ==========================================
+   UNCAUGHT EXCEPTIONS
+========================================== */
+
+process.on(
+  "uncaughtException",
+  (err) => {
+    console.error(
+      "❌ Uncaught Exception:",
+      err?.message || err
+    );
+
+    process.exit(1);
+  }
+);

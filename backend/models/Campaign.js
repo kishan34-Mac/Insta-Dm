@@ -1,5 +1,80 @@
 import mongoose from "mongoose";
 
+const CampaignStepSchema = new mongoose.Schema(
+  {
+    type: {
+      type: String,
+      enum: ["message", "delay", "condition"],
+      required: true,
+    },
+
+    value: {
+      type: String,
+      default: "",
+    },
+
+    delaySeconds: {
+      type: Number,
+      default: 0,
+    },
+
+    order: {
+      type: Number,
+      required: true,
+    },
+
+    aiEnabled: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  {
+    _id: true,
+  }
+);
+
+const CampaignStatsSchema = new mongoose.Schema(
+  {
+    totalTriggered: {
+      type: Number,
+      default: 0,
+    },
+
+    totalSent: {
+      type: Number,
+      default: 0,
+    },
+
+    totalDelivered: {
+      type: Number,
+      default: 0,
+    },
+
+    totalFailed: {
+      type: Number,
+      default: 0,
+    },
+
+    totalReplied: {
+      type: Number,
+      default: 0,
+    },
+
+    totalLeads: {
+      type: Number,
+      default: 0,
+    },
+
+    conversionRate: {
+      type: Number,
+      default: 0,
+    },
+  },
+  {
+    _id: false,
+  }
+);
+
 const CampaignSchema = new mongoose.Schema(
   {
     user: {
@@ -7,92 +82,189 @@ const CampaignSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+
+    instagramAccount: {
+      type: String,
+      required: true,
+    },
+
+    pageId: {
+      type: String,
+      default: "",
+    },
+
     name: {
       type: String,
       required: true,
       trim: true,
+      maxlength: 120,
     },
-    instagramAccount: {
-      type: String, // Store IG user ID
-      required: false,
+
+    description: {
+      type: String,
+      default: "",
+      maxlength: 500,
     },
+
     status: {
       type: String,
-      enum: ["draft", "active", "paused", "completed", "stopped"],
+      enum: [
+        "draft",
+        "active",
+        "paused",
+        "completed",
+        "stopped",
+      ],
       default: "draft",
     },
-    // Trigger settings
+
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+
     triggerType: {
       type: String,
-      enum: ["comment", "keyword", "direct_message"],
+      enum: [
+        "comment",
+        "keyword",
+        "direct_message",
+        "story_reply",
+      ],
       default: "keyword",
     },
+
     keywords: {
       type: [String],
       default: [],
     },
+
+    exactMatch: {
+      type: Boolean,
+      default: false,
+    },
+
+    caseSensitive: {
+      type: Boolean,
+      default: false,
+    },
+
     postId: {
-      type: String, // Specific post or empty for all
+      type: String,
       default: "",
     },
-    // Message templates (steps)
-    steps: [
-      {
-        type: {
-          type: String,
-          enum: ["message", "delay"],
-          required: true,
-        },
-        value: {
-          type: String,
-          required: true,
-        },
-      },
-    ],
-    // Campaign stats
-    stats: {
-      totalSent: {
-        type: Number,
-        default: 0,
-      },
-      totalDelivered: {
-        type: Number,
-        default: 0,
-      },
-      totalFailed: {
-        type: Number,
-        default: 0,
-      },
-      totalReplied: {
-        type: Number,
-        default: 0,
-      },
+
+    postUrl: {
+      type: String,
+      default: "",
     },
-    // Scheduled start time
+
+    applyToAllPosts: {
+      type: Boolean,
+      default: true,
+    },
+
+    steps: {
+      type: [CampaignStepSchema],
+      default: [],
+    },
+
+    saveLeads: {
+      type: Boolean,
+      default: true,
+    },
+
+    tagLeads: {
+      type: [String],
+      default: [],
+    },
+
+    maxMessagesPerDay: {
+      type: Number,
+      default: 500,
+    },
+
+    randomizeDelay: {
+      type: Boolean,
+      default: true,
+    },
+
+    stats: {
+      type: CampaignStatsSchema,
+      default: () => ({}),
+    },
+
     scheduledStart: {
       type: Date,
       default: null,
     },
-    // Scheduled end time
+
     scheduledEnd: {
       type: Date,
       default: null,
     },
+
+    timezone: {
+      type: String,
+      default: "UTC",
+    },
+
+    lastTriggeredAt: {
+      type: Date,
+      default: null,
+    },
+
+    lastMessageSentAt: {
+      type: Date,
+      default: null,
+    },
+
+    webhookEnabled: {
+      type: Boolean,
+      default: true,
+    },
   },
   {
     timestamps: true,
-  },
+  }
 );
 
-// ============================================
-// STEP 3: Indexes
-// ============================================
+// useful indexes
 
-CampaignSchema.index({ user: 1 });
-CampaignSchema.index({ status: 1 });
-CampaignSchema.index({ user: 1, status: 1 });
+CampaignSchema.index({
+  user: 1,
+  status: 1,
+});
 
-// Create and export Campaign model
-const Campaign = mongoose.model("Campaign", CampaignSchema);
+CampaignSchema.index({
+  instagramAccount: 1,
+});
+
+CampaignSchema.index({
+  keywords: 1,
+});
+
+CampaignSchema.index({
+  createdAt: -1,
+});
+
+CampaignSchema.methods.incrementSent = async function () {
+  this.stats.totalSent += 1;
+  return this.save();
+};
+
+CampaignSchema.methods.incrementLead = async function () {
+  this.stats.totalLeads += 1;
+  return this.save();
+};
+
+CampaignSchema.methods.incrementReply = async function () {
+  this.stats.totalReplied += 1;
+  return this.save();
+};
+
+const Campaign =
+  mongoose.models.Campaign ||
+  mongoose.model("Campaign", CampaignSchema);
 
 export default Campaign;

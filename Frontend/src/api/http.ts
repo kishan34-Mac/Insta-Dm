@@ -1,50 +1,68 @@
+import axios from "axios";
+
 const API_BASE_URL = (
-  import.meta.env.VITE_API_URL ?? "http://localhost:5002"
+  import.meta.env.VITE_API_URL ?? "http://localhost:5002/api"
 ).replace(/\/$/, "");
 
-type ApiOptions = RequestInit & {
-  token?: string | null;
-};
+const http = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    "Content-Type": "application/json",
+  },
+  withCredentials: true,
+});
 
-export class ApiError extends Error {
-  status: number;
-  details?: unknown;
-
-  constructor(message: string, status: number, details?: unknown) {
-    super(message);
-    this.name = "ApiError";
-    this.status = status;
-    this.details = details;
+// Interceptor to inject Authorization header
+http.interceptors.request.use((config) => {
+  const rawAuth = localStorage.getItem("athenura.auth");
+  if (rawAuth) {
+    try {
+      const auth = JSON.parse(rawAuth);
+      if (auth.accessToken) {
+        config.headers.Authorization = `Bearer ${auth.accessToken}`;
+      }
+    } catch (e) {
+      console.error("Failed to parse auth from localStorage", e);
+    }
   }
-}
+  return config;
+});
 
-export async function apiRequest<T>(path: string, options: ApiOptions = {}): Promise<T> {
-  const { token, headers, ...requestOptions } = options;
-
-  let response: Response;
-  try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
-      ...requestOptions,
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...headers,
-      },
-    });
-  } catch (error) {
-    throw new ApiError(
-      "Unable to reach the server. Check that the backend is running.",
-      0,
-      error,
-    );
+// Interceptor to handle 401 errors and refresh token
+http.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    
+    if (error.response?.status === 401 && !originalRequest._retry && originalRequest.url !== '/auth/login' && originalRequest.url !== '/auth/refresh') {
+      originalRequest._retry = true;
+      try {
+        const rawAuth = localStorage.getItem("athenura.auth");
+        if (rawAuth) {
+          const auth = JSON.parse(rawAuth);
+          if (auth.refreshToken) {
+            const res = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+              refreshToken: auth.refreshToken,
+            });
+            const newTokens = res.data.data;
+            const newAuth = { ...auth, ...newTokens };
+            localStorage.setItem("athenura.auth", JSON.stringify(newAuth));
+            originalRequest.headers.Authorization = `Bearer ${newTokens.accessToken}`;
+            
+            // Dispatch a custom event to notify AuthContext
+            window.dispatchEvent(new CustomEvent("athenura:auth-refresh", { detail: newAuth }));
+            
+            return http(originalRequest);
+          }
+        }
+      } catch (refreshError) {
+        localStorage.removeItem("athenura.auth");
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
+      }
+    }
+    return Promise.reject(error);
   }
+);
 
-  const payload = await response.json().catch(() => ({}));
-
-  if (!response.ok) {
-    throw new ApiError(payload.message ?? "Request failed", response.status, payload.details);
-  }
-
-  return payload;
-}
+export default http;

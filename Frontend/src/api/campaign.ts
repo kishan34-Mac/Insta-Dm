@@ -1,63 +1,104 @@
-import { apiRequest } from "./http";
+import http from "./http";
 
-export type CampaignStep = {
-  id?: string;
+/* ==========================================
+   TYPES
+========================================== */
+
+export interface CampaignStep {
   type: "message" | "delay";
+
   value: string;
+
+  delaySeconds?: number;
+
+  order: number;
+}
+
+export interface Campaign {
+  _id: string;
+
+  name: string;
+
+  instagramAccount: string;
+
+  status: "draft" | "active" | "paused";
+
+  keywords: string[];
+
+  steps: CampaignStep[];
+
+  createdAt: string;
+}
+
+/* ==========================================
+   CREATE CAMPAIGN
+========================================== */
+
+export const createCampaign = async (data: any) => {
+  const response = await http.post("/campaigns", data);
+
+  return response.data;
 };
 
-export type Campaign = {
-  _id: string;
-  name: string;
-  status: "draft" | "active" | "paused" | "completed" | "stopped";
-  triggerType: "comment" | "keyword" | "direct_message";
-  keywords: string[];
-  postId?: string;
-  steps: CampaignStep[];
-  stats: {
-    totalSent: number;
-    totalDelivered: number;
-    totalFailed: number;
-    totalReplied: number;
-  };
-  createdAt: string;
-  updatedAt: string;
+/* ==========================================
+   GET CAMPAIGNS
+========================================== */
+
+export const getCampaigns = async () => {
+  const response = await http.get("/campaigns");
+
+  return response.data;
 };
+
+/* ==========================================
+   GET SINGLE CAMPAIGN
+========================================== */
+
+export const getCampaign = async (id: string) => {
+  const response = await http.get(`/campaigns/${id}`);
+
+  return response.data;
+};
+
+/* ==========================================
+   UPDATE CAMPAIGN
+========================================== */
+
+export const updateCampaign = async (id: string, data: any) => {
+  const response = await http.put(`/campaigns/${id}`, data);
+
+  return response.data;
+};
+
+/* ==========================================
+   DELETE CAMPAIGN
+========================================== */
+
+export const deleteCampaign = async (id: string) => {
+  const response = await http.delete(`/campaigns/${id}`);
+
+  return response.data;
+};
+
+/* ==========================================
+   TOGGLE CAMPAIGN STATUS
+========================================== */
+
+export const toggleCampaignStatus = async (id: string) => {
+  const response = await http.patch(`/campaigns/${id}/toggle`);
+
+  return response.data;
+};
+
+/* ==========================================
+   CAMPAIGN API OBJECT
+========================================== */
 
 export const campaignApi = {
-  create: (data: Partial<Campaign>, token: string) =>
-    apiRequest<{ data: Campaign }>("/campaigns", {
-      method: "POST",
-      body: JSON.stringify(data),
-      token,
-    }),
-
-  getAll: (token: string) =>
-    apiRequest<{ data: Campaign[] }>("/campaigns", {
-      token,
-    }),
-
-  getById: (id: string, token: string) =>
-    apiRequest<{ data: Campaign }>(`/campaigns/${id}`, {
-      token,
-    }),
-
-  update: (id: string, data: Partial<Campaign>, token: string) =>
-    apiRequest<{ data: Campaign }>(`/campaigns/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(data),
-      token,
-    }),
-
-  delete: (id: string, token: string) =>
-    apiRequest<{ message: string }>(`/campaigns/${id}`, {
-      method: "DELETE",
-      token,
-    }),
-
-  toggleStatus: (id: string, token: string) =>
-    apiRequest<{ data: Campaign }>(`/campaigns/${id}/toggle`, {
-      method: "PATCH",
-      token,
-    }),
+  getAll: getCampaigns,
+  getOne: getCampaign,
+  create: createCampaign,
+  update: updateCampaign,
+  delete: deleteCampaign,
+  toggleStatus: toggleCampaignStatus,
 };

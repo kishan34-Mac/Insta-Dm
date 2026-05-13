@@ -3,13 +3,74 @@ import mongoose from "mongoose";
 
 const InstagramAccountSchema = new mongoose.Schema(
   {
-    igUserId: { type: String, required: true },
-    igUsername: { type: String, required: true },
-    pageId: { type: String, required: true },
-    accessToken: { type: String, required: true },
-    tokenExpiry: { type: Date, required: true },
-    connectedAt: { type: Date, default: Date.now },
-    isActive: { type: Boolean, default: true },
+    igUserId: {
+      type: String,
+      required: true,
+      index: true,
+    },
+
+    igUsername: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    pageId: {
+      type: String,
+      required: true,
+    },
+
+    pageName: {
+      type: String,
+      default: null,
+    },
+
+    accessToken: {
+      type: String,
+      required: true,
+      select: false, // 🔐 hide token
+    },
+
+    pageAccessToken: {
+      type: String,
+      default: null,
+      select: false,
+    },
+
+    tokenType: {
+      type: String,
+      default: "bearer",
+    },
+
+    scopes: {
+      type: [String],
+      default: [],
+    },
+
+    tokenExpiry: {
+      type: Date,
+      required: true,
+    },
+
+    webhookSubscribed: {
+      type: Boolean,
+      default: false,
+    },
+
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+
+    connectedAt: {
+      type: Date,
+      default: Date.now,
+    },
+
+    lastSyncedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { _id: false }
 );
@@ -30,7 +91,7 @@ const UserSchema = new mongoose.Schema(
       type: String,
       required: true,
       minlength: 8,
-      select: false, // 🔐 never return password in queries
+      select: false,
     },
 
     name: {
@@ -60,15 +121,22 @@ const UserSchema = new mongoose.Schema(
     refreshTokens: {
       type: [String],
       default: [],
-      select: false, // 🔐 hide tokens
+      select: false,
+    },
+
+    lastLoginAt: {
+      type: Date,
+      default: null,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
+ 
 UserSchema.index({ plan: 1 });
 
-/* 🔐 HASH PASSWORD BEFORE SAVE */
 UserSchema.pre("save", async function () {
   if (!this.isModified("password")) return;
 
@@ -76,9 +144,26 @@ UserSchema.pre("save", async function () {
   this.password = await bcrypt.hash(this.password, salt);
 });
 
-/* 🔑 COMPARE PASSWORD */
+ 
 UserSchema.methods.comparePassword = async function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
+};
+
+/* 🔄 REFRESH TOKEN HELPERS */
+UserSchema.methods.addRefreshToken = function (token) {
+  if (this.refreshTokens.length >= 5) {
+    this.refreshTokens = this.refreshTokens.slice(-4);
+  }
+
+  this.refreshTokens.push(token);
+};
+
+UserSchema.methods.removeRefreshToken = function (token) {
+  this.refreshTokens = this.refreshTokens.filter((t) => t !== token);
+};
+
+UserSchema.methods.clearRefreshTokens = function () {
+  this.refreshTokens = [];
 };
 
 /* 🧼 CLEAN RESPONSE */
@@ -91,29 +176,15 @@ UserSchema.methods.toJSON = function () {
   if (Array.isArray(obj.instagramAccounts)) {
     obj.instagramAccounts = obj.instagramAccounts.map((acc) => ({
       ...acc,
-      accessToken: "********",
+      accessToken: undefined,
+      pageAccessToken: undefined,
     }));
   }
 
   return obj;
 };
 
-/* 🔄 REFRESH TOKEN HELPERS */
-UserSchema.methods.addRefreshToken = function (token) {
-  if (this.refreshTokens.length >= 5) {
-    this.refreshTokens = this.refreshTokens.slice(-4);
-  }
-  this.refreshTokens.push(token);
-};
-
-UserSchema.methods.removeRefreshToken = function (token) {
-  this.refreshTokens = this.refreshTokens.filter((t) => t !== token);
-};
-
-UserSchema.methods.clearRefreshTokens = function () {
-  this.refreshTokens = [];
-};
-
-const User = mongoose.models.User || mongoose.model("User", UserSchema);
+const User =
+  mongoose.models.User || mongoose.model("User", UserSchema);
 
 export default User;

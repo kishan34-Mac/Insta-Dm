@@ -1,329 +1,439 @@
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
+import InstagramAccount from "../models/instagramAccount.model.js";
 import env from "../config/env.js";
 import User from "../models/User.js";
+import crypto from "crypto";
+
 import { encrypt } from "../utils/encryption.js";
 import { AppError } from "../utils/errorHandler.js";
 
-/**
- * Instagram OAuth Controller
- * Handles Instagram (Meta) OAuth flow for connecting accounts
- */
+ 
+// CONNECT INSTAGRAM
+export const connectInstagram = async (req, res) => {
+  const scope = [
+    "pages_show_list",
+    "instagram_basic",
+    "instagram_manage_messages",
+    "pages_manage_metadata",
+  ].join(",");
 
-//
+  const authUrl =
+    `https://www.facebook.com/v19.0/dialog/oauth?` +
+    `client_id=${process.env.INSTAGRAM_CLIENT_ID}` +
+    `&redirect_uri=${encodeURIComponent(
+      process.env.INSTAGRAM_REDIRECT_URI
+    )}` +
+    `&scope=${scope}` +
+    `&response_type=code`;
 
-// @desc    Redirect to Instagram OAuth
-// @route   GET /auth/instagram/connect
-export const connectInstagram = async (req, res, next) => {
-  try {
-    const clientId = env.instagramClientId;
-    const redirectUri = env.instagramRedirectUri;
-
-    if (!clientId || !redirectUri) {
-      throw new AppError("Instagram OAuth not configured", 500);
-    }
-
-    // Generate state for CSRF protection
-    const state = uuidv4();
-
-    // Store state in session/cookie for validation (use signed cookie)
-    res.cookie("ig_oauth_state", state, {
-      httpOnly: true,
-      secure: env.nodeEnv === "production",
-      sameSite: "lax",
-      maxAge: 15 * 60 * 1000, // 15 minutes
-    });
-
-    // Build authorization URL
-    const scope = [
-      "instagram_basic",
-      "instagram_manage_comments",
-      "instagram_manage_messages",
-      "pages_show_list",
-      "pages_read_engagement",
-    ].join(",");
-
-    const authUrl = new URL("https://www.facebook.com/v19.0/dialog/oauth");
-    authUrl.searchParams.append("client_id", clientId);
-    authUrl.searchParams.append("redirect_uri", redirectUri);
-    authUrl.searchParams.append("scope", scope);
-    authUrl.searchParams.append("response_type", "code");
-    authUrl.searchParams.append("state", state);
-
-    res.redirect(authUrl.toString());
-  } catch (err) {
-    next(err);
-  }
+  return res.redirect(authUrl);
 };
-
-// @desc    Handle Instagram OAuth callback
-// @route   GET /auth/instagram/callback
-export const instagramCallback = async (req, res, next) => {
+/* =========================
+   INSTAGRAM CALLBACK
+========================= */
+export const instagramCallback = async (req, res) => {
   try {
-    const { code, state, error, error_description } = req.query;
+    const { code } = req.query;
 
-    // Handle OAuth errors
-    if (error) {
-      console.error("Instagram OAuth Error:", error, error_description);
-      throw new AppError(error_description || "OAuth failed", 400);
+    if (!code) {
+      return res.status(400).json({
+        success: false,
+        message: "Authorization code missing",
+      });
     }
 
-    // Validate required params
-    if (!code || !state) {
-      throw new AppError("Missing required parameters", 400);
-    }
-
-    // Validate state (CSRF protection)
-    const storedState = req.cookies?.ig_oauth_state;
-    if (!storedState || storedState !== state) {
-      throw new AppError("Invalid state parameter", 400);
-    }
-
-    // Clear state cookie
-    res.clearCookie("ig_oauth_state");
-
-    // Get user ID from URL or session (passed via state or should be logged in)
-    // In a complete flow, the user should be logged in before connecting
-    // Or we can store userId in the state parameter
-    const userId = req.query.userId || req.query.state;
-    if (!userId || userId.length < 24) {
-      throw new AppError("User not authenticated", 401);
-    }
-
-    // Find user
-    const user = await User.findById(userId);
-    if (!user) {
-      throw new AppError("User not found", 404);
-    }
-
-    // Step 1: Exchange code for short-lived token
-    const tokenResponse = await exchangeCodeForToken(code);
-
-    // Step 2: Exchange for long-lived token
-    const longLivedToken = await exchangeForLongLivedToken(
-      tokenResponse.access_token,
-    );
-
-    // Step 3: Fetch Instagram user info
-    const igUserInfo = await getInstagramUserInfo(longLivedToken);
-
-    // Step 4: Encrypt access token
-    const encryptedToken = encrypt(longLivedToken);
-
-    // Calculate token expiry (60 days from now)
-    const tokenExpiry = new Date();
-    tokenExpiry.setDate(tokenExpiry.getDate() + 60);
-
-    // Step 5: Save Instagram account to user
-    const instagramAccount = {
-      igUserId: igUserInfo.id,
-      igUsername: igUserInfo.username,
-      pageId: igUserInfo.page_id,
-      accessToken: encryptedToken,
-      tokenExpiry: tokenExpiry,
-      connectedAt: new Date(),
-      isActive: true,
-    };
-
-    // Add or update Instagram account
-    const existingIndex = user.instagramAccounts.findIndex(
-      (acc) => acc.igUserId === igUserInfo.id,
-    );
-
-    if (existingIndex >= 0) {
-      user.instagramAccounts[existingIndex] = instagramAccount;
-    } else {
-      user.instagramAccounts.push(instagramAccount);
-    }
-
-    await user.save();
-
-    // Redirect to frontend success page
-    res.redirect(`${env.frontendUrl}/dashboard/settings?connected=true`);
-  } catch (err) {
-    console.error("Instagram OAuth Callback Error:", err.message);
-    // Redirect to frontend error page
-    res.redirect(
-      `${env.frontendUrl}/dashboard/settings?error=${encodeURIComponent(err.message)}`,
-    );
-  }
-};
-
-// Helper: Exchange code for short-lived access token
-const exchangeCodeForToken = async (code) => {
-  try {
-    const clientId = env.instagramClientId;
-    const clientSecret = env.instagramClientSecret;
-    const redirectUri = env.instagramRedirectUri;
-
-    const response = await axios.get(
+    // Exchange code for token
+    const tokenResponse = await axios.get(
       "https://graph.facebook.com/v19.0/oauth/access_token",
       {
         params: {
-          grant_type: "fb_exchange_code",
-          client_id: clientId,
-          client_secret: clientSecret,
-          fb_exchange_code: code,
-          redirect_uri: redirectUri,
+          client_id: process.env.FACEBOOK_APP_ID,
+          client_secret: process.env.FACEBOOK_APP_SECRET,
+          redirect_uri: process.env.FACEBOOK_REDIRECT_URI,
+          code,
         },
-      },
+      }
     );
 
-    return response.data;
-  } catch (err) {
-    console.error("Token Exchange Error:", err.response?.data || err.message);
-    throw new AppError("Failed to exchange code for token", 500);
-  }
-};
+    const accessToken = tokenResponse.data.access_token;
 
-// Helper: Exchange short-lived token for long-lived token
-const exchangeForLongLivedToken = async (shortLivedToken) => {
-  try {
-    const clientId = env.instagramClientId;
-    const clientSecret = env.instagramClientSecret;
-
-    const response = await axios.get(
-      "https://graph.facebook.com/v19.0/oauth/access_token",
-      {
-        params: {
-          grant_type: "fb_exchange_code",
-          client_id: clientId,
-          client_secret: clientSecret,
-          fb_exchange_code: shortLivedToken,
-        },
-      },
-    );
-
-    // If this returns a new token, use it; otherwise use the original
-    return response.data.access_token || shortLivedToken;
-  } catch (err) {
-    // If exchange fails, return the original token
-    console.warn("Long-lived token exchange failed, using short-lived token");
-    return shortLivedToken;
-  }
-};
-
-//  Get Instagram user info from Graph API
-const getInstagramUserInfo = async (accessToken) => {
-  try {
-    // 1. Get user pages
+    // Fetch Facebook pages
     const pagesResponse = await axios.get(
       "https://graph.facebook.com/v19.0/me/accounts",
       {
         params: {
           access_token: accessToken,
         },
-      },
+      }
     );
 
-    if (!pagesResponse.data.data || pagesResponse.data.data.length === 0) {
-      throw new AppError("No Facebook pages found", 400);
+    const page = pagesResponse.data.data[0];
+
+    if (!page) {
+      return res.status(400).json({
+        success: false,
+        message: "No Facebook page found",
+      });
     }
 
-    // Get first page
-    const page = pagesResponse.data.data[0];
-    const pageId = page.id;
-
-    // 2. Get Instagram business account
+    // Fetch Instagram business account
     const igResponse = await axios.get(
-      `https://graph.facebook.com/v19.0/${pageId}`,
+      `https://graph.facebook.com/v19.0/${page.id}`,
       {
         params: {
           fields: "instagram_business_account",
-          access_token: accessToken,
+          access_token: page.access_token,
         },
-      },
+      }
     );
 
-    if (!igResponse.data.instagram_business_account) {
-      throw new AppError("No Instagram business account found", 400);
+    const igBusinessId =
+      igResponse.data.instagram_business_account?.id;
+
+    if (!igBusinessId) {
+      return res.status(400).json({
+        success: false,
+        message: "Instagram business account not connected",
+      });
     }
 
-    const igBusinessAccount = igResponse.data.instagram_business_account;
-
-    // 3. Get Instagram username
-    const igUserResponse = await axios.get(
-      `https://graph.facebook.com/v19.0/${igBusinessAccount.id}`,
+    // Fetch Instagram profile
+    const igProfileResponse = await axios.get(
+      `https://graph.facebook.com/v19.0/${igBusinessId}`,
       {
         params: {
-          fields: "username,name,profile_picture_url",
-          access_token: accessToken,
+          fields: "id,username",
+          access_token: page.access_token,
         },
-      },
+      }
     );
 
-    return {
-      id: igBusinessAccount.id,
-      username: igUserResponse.data.username,
-      name: igUserResponse.data.name,
-      profilePicture: igUserResponse.data.profile_picture_url,
-      pageId: pageId,
-    };
-  } catch (err) {
-    console.error("Get IG User Info Error:", err.response?.data || err.message);
-    throw new AppError("Failed to fetch Instagram user info", 500);
-  }
-};
-
-// @desc    Disconnect Instagram account
-// @route   POST /auth/instagram/disconnect
-export const disconnectInstagram = async (req, res, next) => {
-  try {
-    const { igUserId } = req.body;
-
-    if (!igUserId) {
-      throw new AppError("Instagram user ID is required", 400);
-    }
-
-    const user = await User.findById(req.userId);
-    if (!user) {
-      throw new AppError("User not found", 404);
-    }
-
-    // Remove Instagram account
-    user.instagramAccounts = user.instagramAccounts.filter(
-      (acc) => acc.igUserId !== igUserId,
-    );
-
-    await user.save();
-
-    res.status(200).json({
-      success: true,
-      message: "Instagram account disconnected",
+    const existingAccount = await InstagramAccount.findOne({
+      igUserId: igBusinessId,
     });
-  } catch (err) {
-    next(err);
+
+    if (!existingAccount) {
+      await InstagramAccount.create({
+        igUserId: igBusinessId,
+        igUsername: igProfileResponse.data.username,
+        pageId: page.id,
+        accessToken: page.access_token,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Instagram connected successfully",
+      account: igProfileResponse.data,
+    });
+  } catch (error) {
+    console.log(
+      "Instagram Callback Error:",
+      error.response?.data || error.message
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to connect Instagram",
+    });
   }
 };
 
-// @desc    Get connected Instagram accounts
-// @route   GET /auth/instagram/accounts
-export const getInstagramAccounts = async (req, res, next) => {
+/* =========================
+   EXCHANGE TOKEN
+========================= */
+const exchangeCodeForToken = async (
+  code
+) => {
   try {
-    const user = await User.findById(req.userId);
-    if (!user) {
-      throw new AppError("User not found", 404);
+    const response = await axios.get(
+      "https://graph.facebook.com/v19.0/oauth/access_token",
+      {
+        params: {
+          client_id:
+            env.instagramClientId,
+
+          client_secret:
+            env.instagramClientSecret,
+
+          redirect_uri:
+            env.instagramRedirectUri,
+
+          code,
+        },
+      }
+    );
+
+    return response.data;
+  } catch (err) {
+    console.error(
+      "Code Exchange Error:",
+      err.response?.data || err.message
+    );
+
+    throw new AppError(
+      "Failed to exchange OAuth code",
+      500
+    );
+  }
+};
+
+/* =========================
+   LONG LIVED TOKEN
+========================= */
+const exchangeForLongLivedToken =
+  async (shortLivedToken) => {
+    try {
+      const response =
+        await axios.get(
+          "https://graph.facebook.com/v19.0/oauth/access_token",
+          {
+            params: {
+              grant_type:
+                "fb_exchange_token",
+
+              client_id:
+                env.instagramClientId,
+
+              client_secret:
+                env.instagramClientSecret,
+
+              fb_exchange_token:
+                shortLivedToken,
+            },
+          }
+        );
+
+      return response.data.access_token;
+    } catch (err) {
+      console.warn(
+        "Long lived token failed:",
+        err.response?.data ||
+          err.message
+      );
+
+      return shortLivedToken;
     }
+  };
 
-    // Transform accounts to hide sensitive data
-    const accounts = user.instagramAccounts.map((acc) => ({
-      igUserId: acc.igUserId,
-      igUsername: acc.igUsername,
-      connectedAt: acc.connectedAt,
-      isActive: acc.isActive,
-      tokenExpiry: acc.tokenExpiry,
-    }));
+/* =========================
+   GET INSTAGRAM INFO
+========================= */
+const getInstagramUserInfo =
+  async (accessToken) => {
+    try {
+      const pagesResponse =
+        await axios.get(
+          "https://graph.facebook.com/v19.0/me/accounts",
+          {
+            params: {
+              access_token:
+                accessToken,
+            },
+          }
+        );
 
-    res.status(200).json({
-      success: true,
-      data: {
+      const pages =
+        pagesResponse.data.data || [];
+
+      if (!pages.length) {
+        throw new AppError(
+          "No Facebook Pages found",
+          400
+        );
+      }
+
+      const page = pages[0];
+
+      const igResponse =
+        await axios.get(
+          `https://graph.facebook.com/v19.0/${page.id}`,
+          {
+            params: {
+              fields:
+                "instagram_business_account",
+
+              access_token:
+                accessToken,
+            },
+          }
+        );
+
+      if (
+        !igResponse.data
+          .instagram_business_account
+      ) {
+        throw new AppError(
+          "No Instagram Business account connected to page",
+          400
+        );
+      }
+
+      const igBusiness =
+        igResponse.data
+          .instagram_business_account;
+
+      const profileResponse =
+        await axios.get(
+          `https://graph.facebook.com/v19.0/${igBusiness.id}`,
+          {
+            params: {
+              fields:
+                "id,username,name,profile_picture_url",
+
+              access_token:
+                accessToken,
+            },
+          }
+        );
+
+      return {
+        id: igBusiness.id,
+
+        username:
+          profileResponse.data
+            .username,
+
+        name:
+          profileResponse.data.name,
+
+        profilePicture:
+          profileResponse.data
+            .profile_picture_url,
+
+        pageId: page.id,
+
+        pageName: page.name,
+
+        pageAccessToken:
+          page.access_token,
+      };
+    } catch (err) {
+      console.error(
+        "Instagram User Fetch Error:",
+        err.response?.data ||
+          err.message
+      );
+
+      throw new AppError(
+        "Failed to fetch Instagram profile",
+        500
+      );
+    }
+  };
+
+/* =========================
+   DISCONNECT
+========================= */
+export const disconnectInstagram =
+  async (req, res, next) => {
+    try {
+      const { igUserId } = req.body;
+
+      if (!igUserId) {
+        throw new AppError(
+          "Instagram User ID required",
+          400
+        );
+      }
+
+      const user =
+        await User.findOne();
+
+      if (!user) {
+        throw new AppError(
+          "User not found",
+          404
+        );
+      }
+
+      user.instagramAccounts =
+        user.instagramAccounts.filter(
+          (acc) =>
+            acc.igUserId !==
+            igUserId
+        );
+
+      await user.save();
+
+      return res.status(200).json({
+        success: true,
+        message:
+          "Instagram disconnected",
+      });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+/* =========================
+   GET ACCOUNTS
+========================= */
+export const getInstagramAccounts =
+  async (req, res) => {
+    try {
+      const user =
+        await User.findOne({
+          instagramAccounts: {
+            $exists: true,
+            $ne: [],
+          },
+        });
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message:
+            "No Instagram accounts found",
+        });
+      }
+
+      const accounts =
+        user.instagramAccounts.map(
+          (acc) => ({
+            igUserId:
+              acc.igUserId,
+
+            igUsername:
+              acc.igUsername,
+
+            pageId: acc.pageId,
+
+            pageName:
+              acc.pageName,
+
+            connectedAt:
+              acc.connectedAt,
+
+            tokenExpiry:
+              acc.tokenExpiry,
+
+            isActive:
+              acc.isActive,
+
+            webhookSubscribed:
+              acc.webhookSubscribed,
+          })
+        );
+
+      return res.status(200).json({
+        success: true,
         accounts,
-      },
-    });
-  } catch (err) {
-    next(err);
-  }
-};
+      });
+    } catch (err) {
+      console.error(
+        "Get Accounts Error:",
+        err.message
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Failed to fetch Instagram accounts",
+      });
+    }
+  };
 
 export default {
   connectInstagram,

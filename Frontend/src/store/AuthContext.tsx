@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -63,6 +64,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  useEffect(() => {
+    const handleAuthRefresh = (event: Event) => {
+      const customEvent = event as CustomEvent<AuthPayload>;
+      setAuth(customEvent.detail);
+    };
+
+    window.addEventListener("athenura:auth-refresh", handleAuthRefresh);
+    return () => window.removeEventListener("athenura:auth-refresh", handleAuthRefresh);
+  }, []);
+
   const login = useCallback(
     async (input: { email: string; password: string }) => {
       const response = await authApi.login(input);
@@ -82,7 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     if (auth?.accessToken) {
       await authApi
-        .logout(auth.accessToken, auth.refreshToken ?? undefined)
+        .logout(auth.refreshToken ?? undefined)
         .catch(() => undefined);
     }
     persistAuth(null);

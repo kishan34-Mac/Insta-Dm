@@ -2,7 +2,12 @@ import { verifyAccessToken } from "../utils/jwt.js";
 import { AppError } from "../utils/errorHandler.js";
 
 export const protect = (req, res, next) => {
-  const authHeader = req.headers.authorization;
+  let authHeader = req.headers.authorization;
+
+  // Allow token to be passed via query string (for OAuth redirects, e.g. Instagram connect)
+  if (!authHeader && req.query.token) {
+    authHeader = `Bearer ${req.query.token}`;
+  }
 
   if (!authHeader?.startsWith("Bearer ")) {
     return next(new AppError("Not authorized to access this route", 401));

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Plus, Megaphone, MoreVertical, Play, Pause, Trash2 } from "lucide-react";
@@ -19,26 +19,26 @@ export default function Campaigns() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchCampaigns = async () => {
+  const fetchCampaigns = useCallback(async () => {
     if (!accessToken) return;
     try {
-      const response = await campaignApi.getAll(accessToken);
+      const response = await campaignApi.getAll();
       setCampaigns(response.data);
     } catch (error) {
       toast.error("Failed to fetch campaigns");
     } finally {
       setLoading(false);
     }
-  };
+  }, [accessToken]);
 
   useEffect(() => {
     fetchCampaigns();
-  }, [accessToken]);
+  }, [fetchCampaigns]);
 
   const toggleStatus = async (id: string) => {
     if (!accessToken) return;
     try {
-      const response = await campaignApi.toggleStatus(id, accessToken);
+      const response = await campaignApi.toggleStatus(id);
       setCampaigns(campaigns.map(c => c._id === id ? response.data : c));
       toast.success(`Campaign ${response.data.status}`);
     } catch (error) {
@@ -50,7 +50,7 @@ export default function Campaigns() {
     if (!accessToken) return;
     if (!confirm("Are you sure you want to delete this campaign?")) return;
     try {
-      await campaignApi.delete(id, accessToken);
+      await campaignApi.delete(id);
       setCampaigns(campaigns.filter(c => c._id !== id));
       toast.success("Campaign deleted");
     } catch (error) {
