@@ -1,4 +1,4 @@
-import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Outlet, useLocation, useNavigate, Link } from "react-router-dom";
 import {
   BarChart3,
   Bell,
@@ -81,8 +81,8 @@ function AppSidebar() {
               <p className="text-[11px] text-muted-foreground mt-1">
                 Unlock unlimited DMs and advanced analytics.
               </p>
-              <Button variant="hero" size="sm" className="w-full mt-3">
-                Upgrade
+              <Button variant="hero" size="sm" className="w-full mt-3" asChild>
+                <Link to="/#pricing">Upgrade</Link>
               </Button>
             </div>
           </div>
@@ -110,7 +110,7 @@ export default function DashboardLayout() {
 
   const handleLogout = async () => {
     await logout();
-    navigate("/login");
+    navigate("/");
   };
 
   return (

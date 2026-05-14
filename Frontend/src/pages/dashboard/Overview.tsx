@@ -46,11 +46,16 @@ export function StatCard({ label, value, delta, up, icon: Icon, idx }: typeof st
   );
 }
 
+import { useAuth } from "@/store/AuthContext";
+
 export default function Overview() {
+  const { user } = useAuth();
+  const firstName = user?.name?.split(' ')[0] || 'there';
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h2 className="font-display text-2xl font-bold tracking-tight">Welcome back, Jane 👋</h2>
+        <h2 className="font-display text-2xl font-bold tracking-tight">Welcome back, {firstName} 👋</h2>
         <p className="text-muted-foreground text-sm mt-1">Here's how your campaigns performed in the last 14 days.</p>
       </div>
 

@@ -23,8 +23,10 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
 import { toast } from "sonner";
+import { useAuth } from "@/store/AuthContext";
 
 export default function Settings() {
+  const { user } = useAuth();
   const [accounts, setAccounts] =
     useState<InstagramAccount[]>([]);
 
@@ -132,7 +134,7 @@ export default function Settings() {
             <Label>Full name</Label>
 
             <Input
-              defaultValue="Jane Doe"
+              defaultValue={user?.name || ""}
               className="mt-1.5"
             />
           </div>
@@ -142,7 +144,7 @@ export default function Settings() {
 
             <Input
               type="email"
-              defaultValue="jane@brand.com"
+              defaultValue={user?.email || ""}
               className="mt-1.5"
             />
           </div>
