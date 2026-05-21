@@ -207,7 +207,7 @@ export const getCampaigns = async (
               deliveredCount:
                 sentCount,
 
-              replyCount: 0,
+              replyCount: campaign.stats?.totalReplied ?? 0,
             };
           }
         )
