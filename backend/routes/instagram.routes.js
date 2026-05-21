@@ -146,8 +146,10 @@ router.post("/webhook", async (req, res) => {
     console.log(`💬 COMMENT ID: ${commentData.id}`);
 
     // Fetch active campaigns
-    const campaigns = await Campaign.find({ status: "active" });
-    console.log(`📦 ACTIVE CAMPAIGNS IN SYSTEM: ${campaigns.length}`);
+    const campaigns = await campaign.find({
+      status: "active",
+      instagramAccount: webhookInstagramId })
+    console.log(`📦 ACTIVE CAMPAIGNS FOR ACCOUNT [${webhookInstagramId}]: ${campaigns.length}`)
 
     // Find the campaign matching the keywords
     let commenterMatchedKeyword = "";
@@ -224,10 +226,12 @@ router.post("/webhook", async (req, res) => {
       },
       {
         $addToSet: { campaigns: matchedCampaign._id },
+        $setOnInsert: {
+          status : "new",
+        },
         $set: {
           igUsername: commenterUsername,
           dmSent: true,
-          status: "new",
           source: "instagram-comment",
           comment: commentData.text,
           keyword: commenterMatchedKeyword,
