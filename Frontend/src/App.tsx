@@ -9,6 +9,7 @@ import { ProtectedRoute, PublicOnlyRoute } from "@/components/auth/AuthRoute";
 import { AuthProvider } from "@/store/AuthContext";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { CookieConsent } from "@/components/CookieConsent";
+import { RealtimeListener } from "@/components/RealtimeListener";
 
 const Index = lazy(() => import("./pages/Index"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -33,6 +34,7 @@ const App = () => {
     <ThemeProvider>
       <TooltipProvider>
         <AuthProvider>
+          <RealtimeListener />
           <Toaster />
           <Sonner />
           <GoogleOAuthProvider clientId={googleClientId}>

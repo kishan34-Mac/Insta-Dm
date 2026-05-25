@@ -144,7 +144,7 @@ export default function CampaignBuilder() {
       setInstagramAccount(c.instagramAccount || "");
 
       setSteps(
-        c.steps.map((s: any, i: number) => ({
+        c.steps.map((s: { type: "message" | "delay"; value: string; delaySeconds?: number }, i: number) => ({
           id: (i + 1).toString(),
 
           type: s.type,

@@ -318,7 +318,7 @@ export const updateCampaign =
               ).trim(),
           },
           {
-            new: true,
+            returnDocument: "after",
 
             runValidators: true,
           }

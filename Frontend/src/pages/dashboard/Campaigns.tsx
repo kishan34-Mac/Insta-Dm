@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Plus, Pause, Play, MoreVertical, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { campaignApi, Campaign } from "@/api/campaign";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useRealtimeStore } from "@/store/realtime.store";
 
 const Stat = ({
   label,
@@ -34,11 +35,11 @@ const Stat = ({
 
 export default function Campaigns() {
   const navigate = useNavigate();
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { campaigns, setCampaigns } = useRealtimeStore();
+  const [loading, setLoading] = useState(campaigns.length === 0);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchCampaigns = async () => {
+  const fetchCampaigns = useCallback(async () => {
     try {
       const response = await campaignApi.getAll();
       const campaignsData = response.data || [];
@@ -47,11 +48,10 @@ export default function Campaigns() {
     } catch (error) {
       console.error("FETCH CAMPAIGNS ERROR:", error);
       setError("Unable to sync active campaigns.");
-      setCampaigns([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [setCampaigns]);
 
   const toggleCampaign = async (id: string) => {
     try {
@@ -74,11 +74,7 @@ export default function Campaigns() {
 
   useEffect(() => {
     fetchCampaigns();
-
-    // Auto refresh campaigns statistics every 8 seconds to support live updates
-    const interval = setInterval(fetchCampaigns, 8000);
-    return () => clearInterval(interval);
-  }, []);
+  }, [fetchCampaigns]);
 
   if (loading) {
     return (

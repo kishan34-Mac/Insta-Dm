@@ -84,7 +84,7 @@ export const getOverview = async (req, res, next) => {
 
     // 4. Recent Activity Feed
     const recentLeads = await Lead.find({ user: userObjectId })
-      .sort({ createdAt: -1 })
+      .sort({ updatedAt: -1 })
       .limit(5)
       .populate("campaigns");
 

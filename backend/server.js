@@ -3,8 +3,11 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import { Server } from "socket.io";
 import connectDB from "./config/db.js";
 import env from "./config/env.js";
+import { initSocket } from "./services/socket.service.js";
+import { verifyAccessToken } from "./utils/jwt.js";
 
 import authRoutes from "./routes/auth.routes.js";
 import campaignRoutes from "./routes/campaign.routes.js";
@@ -162,6 +165,58 @@ const startServer = async () => {
     server.on("error", (err) => {
       console.error("❌ Server Error:", err);
     });
+
+    // Initialize Socket.io Server with proper CORS configuration matching allowed origins
+    const io = new Server(server, {
+      cors: {
+        origin: (origin, callback) => {
+          if (!origin || allowedOrigins.includes(origin) || origin.includes("ngrok")) {
+            return callback(null, true);
+          }
+          return callback(null, true);
+        },
+        credentials: true,
+        methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization"]
+      }
+    });
+
+    // Socket.io JWT Authentication Middleware
+    io.use((socket, next) => {
+      try {
+        const token = socket.handshake.auth?.token || socket.handshake.headers?.authorization?.split(" ")[1];
+        if (!token) {
+          console.warn(`🔌 [Socket.io Middleware] Auth failed: Token not provided by connection ${socket.id}`);
+          return next(new Error("Authentication error: Token missing"));
+        }
+
+        const decoded = verifyAccessToken(token);
+        if (!decoded || !decoded.userId) {
+          console.warn(`🔌 [Socket.io Middleware] Auth failed: Token invalid or userId missing`);
+          return next(new Error("Authentication error: Invalid session"));
+        }
+
+        socket.userId = decoded.userId;
+        next();
+      } catch (error) {
+        console.error("🔌 [Socket.io Middleware] Exception verifying token:", error.message);
+        return next(new Error("Authentication error: Invalid session"));
+      }
+    });
+
+    // Connection handler
+    io.on("connection", (socket) => {
+      const userRoom = `user:${socket.userId}`;
+      socket.join(userRoom);
+      console.log(`🔌 [Socket.io] User '${socket.userId}' connected on socket '${socket.id}', joined room '${userRoom}'`);
+
+      socket.on("disconnect", (reason) => {
+        console.log(`🔌 [Socket.io] Socket '${socket.id}' disconnected. Reason: ${reason}`);
+      });
+    });
+
+    // Initialize the socket service with this io instance
+    initSocket(io);
   } catch (err) {
     console.error(
       "❌ MongoDB Connection Failed:",

@@ -72,8 +72,8 @@ const leadSchema = new mongoose.Schema(
   }
 );
 
-// Compound index to ensure uniqueness of lead per user/igUserId
-leadSchema.index({ user: 1, igUserId: 1 }, { unique: true });
+// Compound index of lead per user/igUserId (non-unique to allow multiple interactions)
+leadSchema.index({ user: 1, igUserId: 1 });
 
 const Lead =
   mongoose.models.Lead ||

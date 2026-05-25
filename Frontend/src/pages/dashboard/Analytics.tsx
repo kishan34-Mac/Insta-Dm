@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, ComponentType } from "react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Funnel, FunnelChart, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { analyticsApi, AnalyticsData } from "@/api/analytics";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TrendingUp, MessageSquare, Tag, Award, Users, Share2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useRealtimeStore } from "@/store/realtime.store";
 
 const tooltipStyle = {
   background: "hsl(var(--popover))",
@@ -22,7 +23,7 @@ export function AnalyticsCard({
   label: string;
   value: string | number;
   description: string;
-  icon: any;
+  icon: ComponentType<{ className?: string }>;
   idx: number;
 }) {
   return (
@@ -45,15 +46,15 @@ export function AnalyticsCard({
 }
 
 export default function Analytics() {
-  const [data, setData] = useState<AnalyticsData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { analytics: data, setAnalytics } = useRealtimeStore();
+  const [loading, setLoading] = useState(!data);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     try {
       const res = await analyticsApi.get();
-      if (res.success) {
-        setData(res.data);
+      if (res.success && res.data) {
+        setAnalytics(res.data);
         setError(null);
       }
     } catch (err) {
@@ -62,15 +63,11 @@ export default function Analytics() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [setAnalytics]);
 
   useEffect(() => {
     fetchAnalytics();
-
-    // Auto-refresh analytics stats every 10 seconds
-    const interval = setInterval(fetchAnalytics, 10000);
-    return () => clearInterval(interval);
-  }, []);
+  }, [fetchAnalytics]);
 
   if (loading) {
     return (

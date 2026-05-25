@@ -33,7 +33,7 @@ export interface Campaign {
   createdAt: string;
 }
 
-export const createCampaign = async (data: any) => {
+export const createCampaign = async (data: Partial<Campaign> & Record<string, unknown>) => {
   const response = await http.post("/campaigns", data);
 
   return response.data;
@@ -51,7 +51,7 @@ export const getCampaign = async (id: string) => {
   return response.data;
 };
 
-export const updateCampaign = async (id: string, data: any) => {
+export const updateCampaign = async (id: string, data: Partial<Campaign> & Record<string, unknown>) => {
   const response = await http.put(`/campaigns/${id}`, data);
 
   return response.data;

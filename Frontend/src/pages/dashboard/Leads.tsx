@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Search, Edit3, X, Save, Tag as TagIcon, StickyNote, Activity } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -6,11 +6,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { leadApi, Lead } from "@/api/leads";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRealtimeStore } from "@/store/realtime.store";
 
 export default function Leads() {
   const [q, setQ] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-  const [leads, setLeads] = useState<Lead[]>([]);
+  const { leads, setLeads } = useRealtimeStore();
+  const [isLoading, setIsLoading] = useState(leads.length === 0);
   const [error, setError] = useState<string | null>(null);
 
   // CRM Lead detail editing modal
@@ -20,7 +21,7 @@ export default function Leads() {
   const [editTags, setEditTags] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
 
-  const fetchLeads = async () => {
+  const fetchLeads = useCallback(async () => {
     try {
       const res = await leadApi.getAll();
       setLeads(res.data || []);
@@ -31,15 +32,11 @@ export default function Leads() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [setLeads]);
 
   useEffect(() => {
     fetchLeads();
-    
-    // Auto-sync leads CRM page every 8 seconds
-    const interval = setInterval(fetchLeads, 8000);
-    return () => clearInterval(interval);
-  }, []);
+  }, [fetchLeads]);
 
   const handleOpenEditModal = (lead: Lead) => {
     setSelectedLead(lead);
@@ -63,11 +60,10 @@ export default function Leads() {
         tags: parsedTags,
       });
 
-      if (res.success) {
-        // Update local state
-        setLeads((prev) =>
-          prev.map((l) => (l._id === selectedLead._id ? { ...l, ...res.data } : l))
-        );
+      if (res.success && res.data) {
+        // Update store state
+        const updatedLeads = leads.map((l) => (l._id === selectedLead._id ? { ...l, ...res.data } : l));
+        setLeads(updatedLeads);
         setSelectedLead(null);
       }
     } catch (err) {
@@ -214,7 +210,7 @@ export default function Leads() {
                       </td>
 
                       <td className="px-5 py-3.5 text-right text-xs text-muted-foreground">
-                        {new Date(lead.createdAt).toLocaleString("en-US", {
+                        {new Date(lead.updatedAt || lead.createdAt).toLocaleString("en-US", {
                           month: "short",
                           day: "numeric",
                           hour: "2-digit",

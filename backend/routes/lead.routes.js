@@ -14,7 +14,7 @@ router.get("/", async (req, res) => {
 
     const leads = await Lead.find({ user: userId })
       .populate("campaigns")
-      .sort({ createdAt: -1 });
+      .sort({ updatedAt: -1 });
 
     return res.status(200).json({
       success: true,
@@ -46,7 +46,7 @@ router.put("/:id", async (req, res) => {
           lastContacted: new Date(),
         },
       },
-      { new: true, runValidators: true }
+      { returnDocument: "after", runValidators: true }
     ).populate("campaigns");
 
     if (!lead) {

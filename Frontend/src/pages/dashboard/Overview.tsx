@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, ComponentType } from "react";
 import { motion } from "framer-motion";
 import { ArrowUpRight, MessageSquare, TrendingUp, Users, FolderKanban, PlaySquare } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { overviewApi, OverviewData } from "@/api/overview";
 import { useAuth } from "@/store/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useRealtimeStore } from "@/store/realtime.store";
 
 export function StatCard({
   label,
@@ -14,7 +15,7 @@ export function StatCard({
 }: {
   label: string;
   value: string | number;
-  icon: any;
+  icon: ComponentType<{ className?: string }>;
   idx: number;
 }) {
   return (
@@ -43,15 +44,15 @@ export default function Overview() {
   const { user } = useAuth();
   const firstName = user?.name?.split(" ")[0] || "there";
 
-  const [data, setData] = useState<OverviewData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { overview: data, setOverview } = useRealtimeStore();
+  const [loading, setLoading] = useState(!data);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchOverviewData = async () => {
+  const fetchOverviewData = useCallback(async () => {
     try {
       const res = await overviewApi.get();
-      if (res.success) {
-        setData(res.data);
+      if (res.success && res.data) {
+        setOverview(res.data);
         setError(null);
       }
     } catch (err) {
@@ -60,15 +61,11 @@ export default function Overview() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [setOverview]);
 
   useEffect(() => {
     fetchOverviewData();
-
-    // Auto-refresh stats every 8 seconds to support real-time feel after webhook events
-    const interval = setInterval(fetchOverviewData, 8000);
-    return () => clearInterval(interval);
-  }, []);
+  }, [fetchOverviewData]);
 
   const stats = [
     {
