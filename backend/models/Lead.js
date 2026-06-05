@@ -75,6 +75,19 @@ const leadSchema = new mongoose.Schema(
 // Compound index of lead per user/igUserId (non-unique to allow multiple interactions)
 leadSchema.index({ user: 1, igUserId: 1 });
 
+// Index for counting leads by campaign
+leadSchema.index({ campaigns: 1 });
+
+// Index for filtering by status
+leadSchema.index({ user: 1, status: 1 });
+
+// Text index for search functionality
+leadSchema.index({
+  igUsername: "text",
+  notes: "text",
+  comment: "text",
+});
+
 const Lead =
   mongoose.models.Lead ||
   mongoose.model("Lead", leadSchema);

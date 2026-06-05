@@ -3,6 +3,8 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import mongoSanitize from "express-mongo-sanitize";
+import xssSanitize from "./middleware/xss.middleware.js";
 import { Server } from "socket.io";
 import connectDB from "./config/db.js";
 import env from "./config/env.js";
@@ -18,6 +20,9 @@ import analyticsRoutes from "./routes/analytics.routes.js";
 
 import { errorHandler } from "./utils/errorHandler.js";
 
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './config/swagger.js';
+
 const app = express();
 
 app.set("trust proxy", 1);
@@ -29,8 +34,30 @@ const allowedOrigins = [
   "http://127.0.0.1:5173",
 ];
 
-// Security Headers
-app.use(helmet());
+// Security Headers (Helmet with CSP)
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        imgSrc: ["'self'", "data:", "https://res.cloudinary.com", "https://*.instagram.com", "https://*.cdninstagram.com", "https://*.fbcdn.net"],
+        connectSrc: ["'self'", "https://*.instagram.com", "https://*.facebook.com", "https://*.fbcdn.net"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'"],
+        frameSrc: ["'self'"],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
+
+// Data Sanitization
+app.use(mongoSanitize()); // Prevent NoSQL injection
+app.use(xssSanitize()); // Prevent XSS attacks
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, 
@@ -136,6 +163,9 @@ app.use("/api/v1/leads", leadRoutes);
 app.use("/api/v1/instagram", instagramRoutes);
 app.use("/api/v1/overview", overviewRoutes);
 app.use("/api/v1/analytics", analyticsRoutes);
+
+// Swagger Documentation Route
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use((req, res) => {
   return res.status(404).json({

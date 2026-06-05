@@ -128,6 +128,18 @@ const UserSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+
+    loginAttempts: {
+      type: Number,
+      required: true,
+      default: 0,
+      select: false,
+    },
+
+    lockUntil: {
+      type: Number,
+      select: false,
+    },
   },
   {
     timestamps: true,
@@ -142,6 +154,11 @@ UserSchema.pre("save", async function () {
 
   const salt = await bcrypt.genSalt(12);
   this.password = await bcrypt.hash(this.password, salt);
+});
+
+// Virtual for lockout status
+UserSchema.virtual('isLocked').get(function() {
+  return !!(this.lockUntil && this.lockUntil > Date.now());
 });
 
  

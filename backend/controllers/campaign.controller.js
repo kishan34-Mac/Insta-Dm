@@ -2,8 +2,8 @@ import Campaign from "../models/Campaign.js";
 import Lead from "../models/Lead.js";
 
 import { sendSuccess } from "../utils/apiResponse.js";
-
 import { AppError } from "../utils/errorHandler.js";
+import APIFeatures from "../utils/apiFeatures.js";
 
 const normalizeKeywords = (input) => {
   if (!input) return [];
@@ -175,48 +175,55 @@ export const getCampaigns = async (
         req.userId
     );
 
-    const campaigns =
-      await Campaign.find({
-        user:
-          req.user?._id ||
-          req.userId,
-      }).sort({
-        createdAt: -1,
-      });
+    const features = new APIFeatures(
+      Campaign.find({
+        user: req.user?._id || req.userId,
+      }),
+      req.query
+    )
+      .filter()
+      .search(['name', 'triggerKeywords'])
+      .sort()
+      .paginate();
 
-    console.log(
-      "FOUND CAMPAIGNS:",
-      campaigns.length
-    );
+    const campaigns = await features.query;
+    
+    // Get total count for pagination metadata
+    const totalCount = await Campaign.countDocuments({ user: req.user?._id || req.userId });
 
-    const updatedCampaigns =
-      await Promise.all(
-        campaigns.map(
-          async (campaign) => {
-            const sentCount =
-              await Lead.countDocuments({
-                campaigns:
-                  campaign._id,
-              });
+    console.log("FOUND CAMPAIGNS:", campaigns.length);
 
-            return {
-              ...campaign.toObject(),
+    // Optimize N+1 Query: Fetch all lead counts for these campaigns in a single aggregation
+    const campaignIds = campaigns.map(c => c._id);
+    const leadCounts = await Lead.aggregate([
+      { $match: { campaigns: { $in: campaignIds } } },
+      { $unwind: "$campaigns" },
+      { $match: { campaigns: { $in: campaignIds } } },
+      { $group: { _id: "$campaigns", count: { $sum: 1 } } }
+    ]);
 
-              sentCount,
+    const leadCountMap = leadCounts.reduce((acc, curr) => {
+      acc[curr._id.toString()] = curr.count;
+      return acc;
+    }, {});
 
-              deliveredCount:
-                sentCount,
+    const updatedCampaigns = campaigns.map(campaign => {
+      const sentCount = leadCountMap[campaign._id.toString()] || 0;
+      return {
+        ...campaign.toObject(),
+        sentCount,
+        deliveredCount: sentCount,
+        replyCount: 0,
+      };
+    });
 
-              replyCount: 0,
-            };
-          }
-        )
-      );
-
-    return res.status(200).json({
-      success: true,
-
-      data: updatedCampaigns,
+    return sendSuccess(res, {
+      data: {
+        results: updatedCampaigns,
+        total: totalCount,
+        page: parseInt(req.query.page, 10) || 1,
+        limit: parseInt(req.query.limit, 10) || 10,
+      }
     });
   } catch (error) {
     console.error(

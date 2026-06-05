@@ -263,6 +263,7 @@ CampaignSchema.index({
 });
 
 CampaignSchema.index({
+  user: 1,
   instagramAccount: 1,
 });
 
@@ -270,8 +271,10 @@ CampaignSchema.index({
   triggerKeywords: 1,
 });
 
+// Text index for search functionality
 CampaignSchema.index({
-  keywords: 1,
+  name: "text",
+  description: "text",
 });
 
 CampaignSchema.index({

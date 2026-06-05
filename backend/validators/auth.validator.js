@@ -21,15 +21,11 @@ export const loginSchema = z.object({
 });
 
 export const refreshTokenSchema = z.object({
-  body: z.object({
-    refreshToken: z.string().min(1, "Refresh token is required"),
-  }),
+  // No body requirements for refresh since it comes from cookies
 });
 
 export const logoutSchema = z.object({
-  body: z.object({
-    refreshToken: z.string().min(1).optional(),
-  }),
+  // No body requirements for logout since refresh token comes from cookies
 });
 
 export const googleAuthSchema = z.object({

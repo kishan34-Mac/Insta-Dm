@@ -16,14 +16,15 @@ import {
   googleAuthSchema,
   validate,
 } from "../validators/auth.validator.js";
+import { loginLimiter } from "../middleware/rateLimiter.middleware.js";
 
 const router = express.Router();
 
 router.post("/register", validate(registerSchema), register);
 
-router.post("/login", validate(loginSchema), login);
+router.post("/login", loginLimiter, validate(loginSchema), login);
 
-router.post("/google", validate(googleAuthSchema), googleAuth);
+router.post("/google", loginLimiter, validate(googleAuthSchema), googleAuth);
 
 router.get("/me", protect, getMe);
 

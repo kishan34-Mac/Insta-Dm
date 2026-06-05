@@ -77,18 +77,39 @@ export const googleAuthUser = async (credential, mode, plan) => {
 };
 
 export const loginUser = async ({ email, password }) => {
-  const user = await User.findOne({ email }).select("+password +refreshTokens");
+  const user = await User.findOne({ email }).select("+password +refreshTokens +loginAttempts +lockUntil");
   if (!user) {
     throw new AppError("Invalid email or password", 401);
   }
 
+  if (user.isLocked) {
+    throw new AppError("Account is temporarily locked due to multiple failed login attempts. Please try again later.", 403);
+  }
+
   const isValidPassword = await user.comparePassword(password);
   if (!isValidPassword) {
+    // Increment login attempts
+    user.loginAttempts += 1;
+    
+    // Lock account if max attempts reached (e.g. 5)
+    if (user.loginAttempts >= 5) {
+      user.lockUntil = Date.now() + 15 * 60 * 1000; // Lock for 15 minutes
+    }
+    
+    await user.save();
     throw new AppError("Invalid email or password", 401);
+  }
+
+  // Reset login attempts on successful login
+  if (user.loginAttempts > 0 || user.lockUntil) {
+    user.loginAttempts = 0;
+    user.lockUntil = undefined;
   }
 
   const tokens = generateTokens(user._id.toString());
   user.addRefreshToken(tokens.refreshToken);
+  
+  user.lastLoginAt = new Date();
   await user.save();
 
   return buildAuthPayload(user, tokens);

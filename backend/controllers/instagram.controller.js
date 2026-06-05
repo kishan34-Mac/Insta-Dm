@@ -6,6 +6,8 @@ import Campaign from "../models/Campaign.js";
 import Lead from "../models/Lead.js";
 import { emitToUser } from "../services/socket.service.js";
 import env from "../config/env.js";
+import { sendSuccess } from "../utils/apiResponse.js";
+import { AppError } from "../utils/errorHandler.js";
 
 export const connectInstagram = async (req, res) => {
   try {
@@ -203,47 +205,39 @@ export const instagramCallback = async (req, res) => {
   }
 };
 
-export const getInstagramAccounts = async (req, res) => {
+export const getInstagramAccounts = async (req, res, next) => {
   try {
     const accounts = await InstagramAccount.find({
       user: req.userId,
       isActive: true,
     });
 
-    return res.status(200).json({
-      success: true,
-      accounts,
+    return sendSuccess(res, {
+      data: accounts,
     });
   } catch (error) {
-    console.error("GET INSTAGRAM ACCOUNTS ERROR:", error.message);
-
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch Instagram accounts",
-    });
+    next(new AppError("Failed to fetch Instagram accounts", 500));
   }
 };
 
-export const disconnectInstagram = async (req, res) => {
+export const disconnectInstagram = async (req, res, next) => {
   try {
     const { igUserId } = req.params;
 
-    await InstagramAccount.findOneAndDelete({
+    const account = await InstagramAccount.findOneAndDelete({
       igUserId,
       user: req.userId,
     });
 
-    return res.status(200).json({
-      success: true,
+    if (!account) {
+      throw new AppError("Instagram account not found", 404);
+    }
+
+    return sendSuccess(res, {
       message: "Instagram disconnected successfully",
     });
   } catch (error) {
-    console.error("DISCONNECT INSTAGRAM ERROR:", error.message);
-
-    return res.status(500).json({
-      success: false,
-      message: "Failed to disconnect Instagram",
-    });
+    next(new AppError("Failed to disconnect Instagram", 500));
   }
 };
 
