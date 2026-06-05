@@ -13,7 +13,7 @@ export interface InstagramAccount {
 
 export interface InstagramAccountsResponse {
   success: boolean;
-  accounts: InstagramAccount[];
+  data: InstagramAccount[];
 }
 
 export const connectInstagram =

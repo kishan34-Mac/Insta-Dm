@@ -48,7 +48,7 @@ export default function Campaigns() {
   const fetchCampaigns = useCallback(async () => {
     try {
       const response = await campaignApi.getAll();
-      const campaignsData = response.data || [];
+      const campaignsData = response.data?.results || (Array.isArray(response.data) ? response.data : []);
       setCampaigns(campaignsData);
       setError(null);
     } catch (error) {

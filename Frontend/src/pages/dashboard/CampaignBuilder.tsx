@@ -108,7 +108,7 @@ export default function CampaignBuilder() {
 
       console.log("INSTAGRAM RESPONSE:", response);
 
-      const accountsData = response?.accounts || [];
+      const accountsData = response?.data || [];
 
       setAccounts(accountsData);
 

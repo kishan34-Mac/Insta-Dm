@@ -44,7 +44,7 @@ export default function Settings() {
         await getInstagramAccounts();
 
       setAccounts(
-        response?.accounts || []
+        response?.data || []
       );
     } catch (error) {
       console.error(error);

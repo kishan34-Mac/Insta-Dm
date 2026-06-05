@@ -26,7 +26,7 @@ export default function Leads() {
   const fetchLeads = useCallback(async () => {
     try {
       const res = await leadApi.getAll();
-      setLeads(res.data || []);
+      setLeads(res.data?.results || (Array.isArray(res.data) ? res.data : []));
       setError(null);
     } catch (error) {
       console.error("FETCH LEADS ERROR:", error);
