@@ -50,14 +50,14 @@ const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
         style={{ transform }}
         className={cn(
           "card group relative overflow-hidden rounded-[24px] text-card-foreground",
-          "bg-[rgba(255,255,255,.75)] backdrop-blur-[20px] supports-[backdrop-filter]:bg-[rgba(255,255,255,.75)]",
-          "border border-[rgba(255,255,255,.5)]",
-          "shadow-[0_4px_20px_rgba(15,23,42,.05),0_1px_3px_rgba(15,23,42,.05)]",
+          "bg-white/60 dark:bg-zinc-950/60 backdrop-blur-[20px] supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-zinc-950/60",
+          "border border-white/50 dark:border-white/10",
+          "shadow-[0_4px_20px_rgba(15,23,42,.05),0_1px_3px_rgba(15,23,42,.05)] dark:shadow-[0_4px_20px_rgba(0,0,0,.2)]",
           "transition-transform duration-300 will-change-transform",
           "focus-within:outline-none focus-within:ring-2 focus-within:ring-ring/30",
           "hover:transform hover:-translate-y-[8px] hover:scale-[1.02]",
-          "hover:border-[rgba(139,92,246,.35)]",
-          "hover:shadow-[0_30px_60px_rgba(139,92,246,.15),0_10px_25px_rgba(59,130,246,.10),0_0_40px_rgba(139,92,246,.12)]",
+          "hover:border-primary/50 dark:hover:border-primary/50",
+          "hover:shadow-[0_30px_60px_rgba(139,92,246,.15),0_10px_25px_rgba(59,130,246,.10),0_0_40px_rgba(139,92,246,.12)] dark:hover:shadow-[0_30px_60px_rgba(139,92,246,.15),0_10px_25px_rgba(59,130,246,.10),0_0_40px_rgba(139,92,246,.12)]",
           className
         )}
         {...props}
