@@ -38,9 +38,17 @@ const items = [
   { title: "Settings", url: "/dashboard/settings", icon: SettingsIcon },
 ];
 
-function AppSidebar() {
+function AppSidebar({
+  handleLogout,
+}: {
+  handleLogout: () => void;
+}) {
   const { state } = useSidebar();
-  const collapsed = state === "collapsed";
+
+  const collapsed =
+    state === "collapsed";
+
+
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
@@ -75,16 +83,41 @@ function AppSidebar() {
         </SidebarGroup>
 
         {!collapsed && (
-          <div className="mt-auto p-4">
+          <div className="mt-auto p-4 space-y-3">
             <div className="rounded-xl border border-sidebar-border bg-gradient-to-br from-primary/15 to-accent/10 p-4">
-              <p className="text-xs font-semibold">Upgrade to Pro</p>
+              <p className="text-xs font-semibold">
+                Upgrade to Pro
+              </p>
+
               <p className="text-[11px] text-muted-foreground mt-1">
                 Unlock unlimited DMs and advanced analytics.
               </p>
-              <Button variant="hero" size="sm" className="w-full mt-3" asChild>
-                <Link to="/#pricing">Upgrade</Link>
+
+              <Button
+                variant="hero"
+                size="sm"
+                className="w-full mt-3"
+                asChild
+              >
+                <Link to="/#pricing">
+                  Upgrade
+                </Link>
               </Button>
             </div>
+
+            <Button
+              variant="ghost"
+              className="
+    w-full
+    justify-start
+    hover:bg-sidebar-accent
+    hover:text-sidebar-accent-foreground
+  "
+              onClick={handleLogout}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Logout
+            </Button>
           </div>
         )}
       </SidebarContent>
@@ -116,7 +149,12 @@ export default function DashboardLayout() {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full max-w-full overflow-x-hidden bg-background">
-        <AppSidebar />
+        <AppSidebar
+          handleLogout={() => {
+            logout();
+            navigate("/");
+          }}
+        />
         <div className="flex-1 flex flex-col min-w-0">
           <header className="h-16 border-b border-border flex items-center gap-2 sm:gap-3 px-3 sm:px-6 sticky top-0 z-30 bg-background/80 backdrop-blur-xl">
             <SidebarTrigger className="shrink-0" />
@@ -141,14 +179,7 @@ export default function DashboardLayout() {
                 <Bell className="h-4 w-4" />
               </Button>
               <ThemeToggle />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="hidden sm:inline-flex"
-                onClick={handleLogout}
-              >
-                <LogOut className="h-4 w-4" />
-              </Button>
+
               <Avatar className="h-8 w-8">
                 <AvatarFallback className="bg-gradient-primary text-primary-foreground text-xs">
                   {initials}
