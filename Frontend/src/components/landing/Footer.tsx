@@ -1,5 +1,5 @@
 import { BrandLogo } from "@/components/BrandLogo";
-import { Button } from "@/components/ui/button";
+
 import { motion } from "framer-motion";
 
 import {
@@ -72,13 +72,45 @@ export function Footer() {
 
   return (
     <footer className="mt-8">
-      <div className="relative overflow-hidden rounded-2xl bg-surface/40">
-        {/* background (light premium continuation) */}
+      <div
+        className="relative overflow-hidden rounded-2xl border-t border-[rgba(255,255,255,0.08)] bg-[var(--footer-bg)] backdrop-blur-12"
+      >
+        {/* footer theme variables + background (dark glass continuation) */}
+        <style>{`
+          .footer-theme {
+            --footer-bg: #ffffff;
+            --footer-surface: rgba(255,255,255,0.03);
+            --footer-border: rgba(255,255,255,0.08);
+            --footer-heading: #000000;
+            --footer-text: rgba(0,0,0,0.65);
+            --footer-hover: #000000;
+            --footer-purple: rgba(139,92,246,0.5);
+            --footer-blue: rgba(59,130,246,0.4);
+          }
+          .dark .footer-theme {
+            --footer-bg: radial-gradient(circle at top left, rgba(139,92,246,0.12), transparent 40%),
+                         radial-gradient(circle at top right, rgba(59,130,246,0.08), transparent 40%),
+                         linear-gradient(180deg, #050816 0%, #0B1020 45%, #111827 100%);
+            --footer-surface: rgba(255,255,255,0.03);
+            --footer-border: rgba(255,255,255,0.08);
+            --footer-heading: #ffffff;
+            --footer-text: rgba(255,255,255,0.65);
+            --footer-hover: #ffffff;
+          }
+        `}</style>
+
+        <div className="absolute inset-0 footer-theme" />
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-b from-white via-white to-surface/60" />
-          <div className="absolute inset-0 opacity-40 mesh-bg" />
-          <div className="absolute inset-x-0 top-0 h-40 bg-[radial-gradient(420px_circle_at_20%_0%,rgba(124,58,237,.18),transparent_60%),radial-gradient(480px_circle_at_90%_20%,rgba(59,130,246,.14),transparent_55%)]" />
+          {/* dark glass ambient continuation (dark theme only) */}
+          <div className="dark:absolute dark:inset-0 hidden dark:block">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(139,92,246,0.12),transparent_40%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.08),transparent_40%)]" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#050816] via-[#0B1020] to-[#111827] opacity-95" />
+          </div>
+
+          {/* light theme subtle glow */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(139,92,246,0.10),transparent_40%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.08),transparent_40%)] dark:hidden" />
         </div>
+
 
         {/* top border */}
         <div className="absolute left-0 right-0 top-0 h-[1px] bg-gradient-to-r from-primary/30 via-accent/30 to-primary/30" />
@@ -93,7 +125,7 @@ export function Footer() {
             className="container"
           >
             {/* Main grid */}
-            <div className="grid gap-10 lg:grid-cols-4">
+            <div className="grid gap-20 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
               {/* Brand */}
               <div className="lg:col-span-1">
                 <Link to="/" aria-label="Athenura home" className="inline-flex items-center">
@@ -175,18 +207,18 @@ export function Footer() {
                 </ul>
               </div>
             </div>
-              <div className="flex">
+              {/* <div className="flex">
              <p className="mt-0 text-sm text-muted-foreground max-w-xs ml-auto " >
               Turn Instagram comments into paying customers — automatically.
             </p>
               <p className="mt-0 text-sm leading-relaxed text-muted-foreground max-w-xs ml-auto" >
                         Get automation tips, growth strategies, and product updates.
                       </p>
-            </div>
+            </div> */}
 
 
              {/* trust indicators */}
-            <div className="mt-12 rounded-2xl border border-white/10 bg-[rgba(255,255,255,.03)] backdrop-blur-xl p-4">
+            {/* <div className="mt-12 rounded-2xl border border-white/10 bg-[rgba(255,255,255,.03)] backdrop-blur-xl p-4">
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
 
 
@@ -215,7 +247,7 @@ export function Footer() {
                   <span>Meta API Connected</span>
                 </div>
               </div>
-            </div>
+            </div> */}
 
             {/* divider */}
             <div className="mt-6 h-px w-full bg-border" />

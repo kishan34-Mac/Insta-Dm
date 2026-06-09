@@ -102,12 +102,7 @@ export default function Analytics() {
   const summary = data?.summary;
 
   const cards = [
-    {
-      label: "Conversion Rate",
-      value: `${summary?.conversionRate ?? 0}%`,
-      description: "Leads who replied back to your DMs",
-      icon: TrendingUp,
-    },
+   
     {
       label: "Total Replies",
       value: summary?.totalReplies ?? 0,

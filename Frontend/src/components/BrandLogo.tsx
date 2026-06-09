@@ -27,6 +27,7 @@ export function BrandLogo({
       <span
         className={cn(
           "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-white shadow-sm font-semibold",
+          "leading-none",
           animated && "transition-transform duration-300 hover:scale-105",
           className,
         )}
@@ -50,7 +51,7 @@ export function BrandLogo({
   const content = (
     <span
       className={cn(
-        "inline-flex items-center shrink-0 h-8 w-auto mr-2",
+        "inline-flex items-center shrink-0 h-8 w-auto mr-2 min-w-0",
         animated && "transition-transform duration-300 hover:scale-105",
         className,
       )}
@@ -60,7 +61,7 @@ export function BrandLogo({
         {icon}
       </div>
       <span className="font-display text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
-        Athenura
+         <img src="/assets/athenura-logo.png" alt="brandlogo" className="h-8 w-auto max-w-full object-contain" />
       </span>
     </span>
   );
@@ -76,7 +77,7 @@ export function BrandLogo({
   return (
     <span
       className={cn(
-        "inline-flex items-center shrink-0 h-8 w-auto mr-2",
+        "inline-flex items-center shrink-0 h-8 w-auto mr-2 min-w-0",
         animated && "transition-transform duration-300 hover:scale-105",
         className,
       )}
@@ -85,8 +86,8 @@ export function BrandLogo({
       <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-white shadow-sm mr-2.5">
         <Icon />
       </div>
-      <span className="font-display text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
-        Athenura
+      <span className="font-display text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70 min-w-0">
+        <img src="/assets/athenura-logo.png" alt="brandlogo" className="h-8 w-auto max-w-full object-contain" />
       </span>
     </span>
   );

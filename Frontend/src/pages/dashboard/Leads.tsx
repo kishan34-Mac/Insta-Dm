@@ -137,7 +137,7 @@ export default function Leads() {
             />
           </div>
 
-          <span className="text-xs text-muted-foreground ml-auto bg-zinc-900 border border-zinc-800 px-3 py-1 rounded-full font-medium">
+          <span className="text-xs text-muted-foreground ml-auto bg-white-900 border border-zinc-800 px-3 py-1 rounded-full font-medium">
             {filtered.length} leads in CRM
           </span>
         </div>

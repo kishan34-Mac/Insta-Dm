@@ -35,8 +35,15 @@ const workspaceItems: DashboardNavItem[] = [
 ];
 
 const managementItems: DashboardNavItem[] = [
+ 
   { title: "Analytics", url: "/dashboard/analytics", icon: BarChart3 },
   { title: "Settings", url: "/dashboard/settings", icon: SettingsIcon },
+   {
+    title: " Back to Home",
+    url: "/",
+    icon: LayoutDashboard,
+    end: true,
+  }
   // { title: "Billing", url: "/dashboard/settings", icon: SettingsIcon },
 ];
 
@@ -79,7 +86,6 @@ export function SidebarNav() {
                     className="hover:bg-muted rounded-xl transition-all"
                     activeClassName="bg-gradient-primary text-primary-foreground hover:bg-gradient-primary [&>svg]:text-primary-foreground font-medium"
                   >
-                    <span className="mr-2">□</span>
                     <item.icon className="h-4 w-4" />
                     <span>{item.title}</span>
                   </NavLink>
