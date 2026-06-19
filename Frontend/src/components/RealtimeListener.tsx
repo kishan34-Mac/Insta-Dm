@@ -38,7 +38,8 @@ export function RealtimeListener() {
       // Perform silent background synchronization to match DB source of truth
       try {
         const res = await campaignApi.getAll();
-        setCampaigns(res.data || []);
+        const data = res.data?.results || (Array.isArray(res.data) ? res.data : []);
+        setCampaigns(data);
       } catch (err) {
         console.error("Failed to sync campaigns list:", err);
       }

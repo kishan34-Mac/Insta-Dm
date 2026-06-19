@@ -8,10 +8,19 @@ import Payment from "../models/Payment.js";
 
 import { sendSuccess } from "../utils/apiResponse.js";
 
-const razorpay = new Razorpay({
-  key_id: env.RAZORPAY_KEY_ID,
-  key_secret: env.RAZORPAY_KEY_SECRET,
-});
+let _razorpay;
+function getRazorpay() {
+  if (!_razorpay) {
+    if (!env.RAZORPAY_KEY_ID || !env.RAZORPAY_KEY_SECRET) {
+      throw new AppError("Razorpay not configured – set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in .env", 500);
+    }
+    _razorpay = new Razorpay({
+      key_id: env.RAZORPAY_KEY_ID,
+      key_secret: env.RAZORPAY_KEY_SECRET,
+    });
+  }
+  return _razorpay;
+}
 
 const BILLING_PLANS = {
   STARTER: { key: "starter", amountPaise: 49900 },
@@ -94,7 +103,7 @@ export const createRazorpayOrder = async (req, res, next) => {
       billingStatus: "pending",
     });
 
-    const order = await razorpay.orders.create({
+    const order = await getRazorpay().orders.create({
       amount,
       currency: env.RAZORPAY_CURRENCY || "INR",
       receipt: buildOrderReceipt(userId),
