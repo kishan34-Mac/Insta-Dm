@@ -41,6 +41,13 @@ export default function Settings() {
     useState(true);
   const [upgradingPlan, setUpgradingPlan] = useState<PlanKey | null>(null);
 
+  const planToRequestKey = (plan: PlanKey) => {
+    if (plan === "starter") return "STARTER";
+    if (plan === "pro") return "PRO";
+    return "AGENCY";
+  };
+
+
 
   const [disconnectingId, setDisconnectingId] =
     useState<string | null>(null);
@@ -95,24 +102,39 @@ export default function Settings() {
       setUpgradingPlan(plan);
       await loadRazorpayScript();
 
-      const order = await billingApi.createRazorpayOrder({ plan });
+      const order = await billingApi.createRazorpayOrder({
+        // Backend expects upper-case plan keys: STARTER | PRO | AGENCY
+        plan: planToRequestKey(plan),
+      });
 
-      const w = window as any;
-      const rzp = new w.Razorpay({
-
+      const w = window as unknown as { Razorpay?: new (options: unknown) => { open: () => void } };
+      const rzp = new (w.Razorpay as unknown as { open: () => void })({
         key: order.keyId,
         amount: order.amount,
         currency: order.currency,
+
         name: "Insta-Dm",
         description: `Upgrade to ${plan.toUpperCase()}`,
         order_id: order.orderId,
         notes: {
           plan,
         },
-        handler: async function (response: any) {
-          const paymentId = response.razorpay_payment_id as string | undefined;
-          const orderId = (response.razorpay_order_id as string | undefined) || order.orderId;
-          const signature = response.razorpay_signature as string | undefined;
+        handler: async function (response: unknown) {
+          const paymentId =
+            (response as any)?.razorpay_payment_id as
+              | string
+              | undefined;
+
+          const signature =
+            (response as any)?.razorpay_signature as
+              | string
+              | undefined;
+
+          const orderId =
+            (response as any)?.razorpay_order_id ??
+            order.orderId;
+
+
 
 
           if (!paymentId || !signature) {
@@ -122,27 +144,12 @@ export default function Settings() {
           }
 
           try {
-      const verifyRes = await fetch(`/api/v1/billing/razorpay/verify`, {
-
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${user?.accessToken || ""}`,
-              },
-              body: JSON.stringify({
-                razorpay_order_id: orderId,
-                razorpay_payment_id: paymentId,
-                razorpay_signature: signature,
-                plan,
-              }),
+            await billingApi.verifyRazorpayPayment({
+              razorpay_order_id: orderId,
+              razorpay_payment_id: paymentId,
+              razorpay_signature: signature,
+              plan,
             });
-
-            if (!verifyRes.ok) {
-              const errText = await verifyRes.text().catch(() => "");
-              throw new Error(
-                `Verify failed: ${verifyRes.status} ${errText}`
-              );
-            }
 
             toast.success("Upgrade successful!");
             window.location.reload();
@@ -153,6 +160,7 @@ export default function Settings() {
             setUpgradingPlan(null);
           }
         },
+
         theme: {
           color: "#7c3aed",
         },
@@ -166,9 +174,11 @@ export default function Settings() {
       rzp.open();
     } catch (e) {
       console.error(e);
-      toast.error("Upgrade failed");
+      const serverMsg = e?.response?.data?.message;
+      toast.error(serverMsg ? `Upgrade failed: ${serverMsg}` : "Upgrade failed");
       setUpgradingPlan(null);
     }
+
   };
 
   const handleDisconnect = async (

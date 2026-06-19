@@ -4,6 +4,8 @@ import crypto from "crypto";
 import env from "../config/env.js";
 import { AppError } from "../utils/errorHandler.js";
 import User from "../models/User.js";
+import Payment from "../models/Payment.js";
+
 import { sendSuccess } from "../utils/apiResponse.js";
 
 const razorpay = new Razorpay({
@@ -11,26 +13,45 @@ const razorpay = new Razorpay({
   key_secret: env.RAZORPAY_KEY_SECRET,
 });
 
-const PLAN_TO_PRICE_PAISA = {
-  starter: 2900,
-  pro: 7900,
-  agency: 19900,
+const BILLING_PLANS = {
+  STARTER: { key: "starter", amountPaise: 49900 },
+  PRO: { key: "pro", amountPaise: 99900 },
+  AGENCY: { key: "agency", amountPaise: 249900 },
 };
 
-const normalizePlan = (plan) => {
+const normalizePlanKey = (plan) => {
   if (plan == null) return null;
+  if (typeof plan !== "string") {
+    // allow already-normalized lower-case keys
+    if (typeof plan === "string") return plan;
+    return null;
+  }
 
-  if (typeof plan !== "string") return null;
-
-  const normalized = plan.trim().toLowerCase();
+  const normalized = plan.trim().toUpperCase();
   if (!normalized) return null;
+  if (!Object.prototype.hasOwnProperty.call(BILLING_PLANS, normalized)) {
+    // also allow direct lower-case plan keys (starter/pro/agency)
+    const direct = plan.trim().toLowerCase();
+    if (["starter", "pro", "agency"].includes(direct)) return direct;
+    return null;
+  }
 
-  if (normalized === "free") return "free";
-  if (["starter", "pro", "agency"].includes(normalized)) return normalized;
+  return BILLING_PLANS[normalized].key;
+};
 
+const amountForPlanKey = (planKey) => {
+  if (planKey === "starter") return BILLING_PLANS.STARTER.amountPaise;
+  if (planKey === "pro") return BILLING_PLANS.PRO.amountPaise;
+  if (planKey === "agency") return BILLING_PLANS.AGENCY.amountPaise;
   return null;
 };
 
+// Razorpay receipt max length is 40 characters.
+const buildOrderReceipt = (userId) => {
+  const suffix = String(userId).slice(-8);
+  const receipt = `rcpt_${suffix}_${Date.now()}`;
+  return receipt.slice(0, 40);
+};
 
 export const createRazorpayOrder = async (req, res, next) => {
   try {
@@ -42,24 +63,23 @@ export const createRazorpayOrder = async (req, res, next) => {
     console.log("[billing:create-order] has auth header:", !!req.headers.authorization);
 
     const incomingPlan = req.body?.plan ?? null;
-    const requestedPlan = normalizePlan(incomingPlan);
+    const requestedPlan = normalizePlanKey(incomingPlan);
 
     console.log("[billing:create-order] incomingPlan:", incomingPlan);
     console.log("[billing:create-order] requestedPlan:", requestedPlan);
 
-    // Important: support both your defined enum and Razorpay-verified flows.
-    // If requestedPlan is invalid, return a helpful message.
-    if (!requestedPlan || requestedPlan === "free") {
+    if (!requestedPlan) {
       throw new AppError(
-        `Invalid plan selected. Received plan: ${String(incomingPlan)}`,
+        `Invalid plan selected. Received plan: ${String(incomingPlan)}. Allowed: STARTER, PRO, AGENCY`,
         400
       );
     }
 
-    const amount = PLAN_TO_PRICE_PAISA[requestedPlan];
+    const amount = amountForPlanKey(requestedPlan);
     if (!amount) {
-      throw new AppError(`No pricing configured for plan: ${requestedPlan}`, 400);
+      throw new AppError(`No pricing configured for plan: ${requestedPlan}`, 500);
     }
+
 
     if (!req.userId) {
       throw new AppError("User not found in request context", 401);
@@ -68,7 +88,7 @@ export const createRazorpayOrder = async (req, res, next) => {
     const userId = req.userId;
 
 
-    // mark pending on order creation (free trial until webhook/verification)
+    // mark pending on order creation (until verify/webhook activates)
     await User.findByIdAndUpdate(userId, {
       currentBillingPlan: requestedPlan,
       billingStatus: "pending",
@@ -77,12 +97,24 @@ export const createRazorpayOrder = async (req, res, next) => {
     const order = await razorpay.orders.create({
       amount,
       currency: env.RAZORPAY_CURRENCY || "INR",
-      receipt: `order_rcpt_${userId}_${Date.now()}`,
+      receipt: buildOrderReceipt(userId),
       payment_capture: 1,
       notes: {
         userId: String(userId),
         plan: requestedPlan,
       },
+    });
+
+    // persist pending payment history (do not trust frontend amount)
+    await Payment.create({
+      userId,
+      razorpayOrderId: order.id,
+      razorpayPaymentId: null,
+      razorpaySignature: null,
+      amount,
+      currency: order.currency || env.RAZORPAY_CURRENCY || "INR",
+      status: "pending",
+      plan: requestedPlan,
     });
 
     await User.findByIdAndUpdate(userId, {
@@ -99,14 +131,29 @@ export const createRazorpayOrder = async (req, res, next) => {
         plan: requestedPlan,
       },
     });
+
   } catch (err) {
+    const razorpayError = err?.error;
+    if (razorpayError?.description) {
+      return next(
+        new AppError(
+          `Razorpay order failed: ${razorpayError.description}`,
+          400
+        )
+      );
+    }
     next(err);
   }
 };
 
 export const verifyRazorpayPayment = async (req, res, next) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, plan } = req.body || {};
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      plan,
+    } = req.body || {};
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
       throw new AppError("Missing payment verification fields", 400);
@@ -118,16 +165,50 @@ export const verifyRazorpayPayment = async (req, res, next) => {
       .digest("hex");
 
     if (expected !== razorpay_signature) {
-      throw new AppError("Invalid Razorpay signature", 400);
+      throw new AppError("Payment verification failed: invalid signature", 400);
     }
 
-    // If called, trust plan from payload; fallback to user currentBillingPlan
-    const requestedPlan = normalizePlan(plan) || req.user?.currentBillingPlan || req.user?.plan;
     const userId = req.userId;
+    if (!userId) {
+      throw new AppError("User not found in request context", 401);
+    }
+
+    // Never trust plan/amount from frontend. Use stored Payment record.
+    const payment = await Payment.findOne({
+      userId,
+      razorpayOrderId: razorpay_order_id,
+    });
+
+    if (!payment) {
+      throw new AppError("Order not found for this user", 404);
+    }
+
+    const requestedPlan = normalizePlanKey(plan);
+    if (requestedPlan && payment.plan !== requestedPlan) {
+      throw new AppError("Plan mismatch for this payment", 400);
+    }
+
+    if (!amountForPlanKey(payment.plan)) {
+      throw new AppError("Invalid stored payment plan", 500);
+    }
+
+    payment.razorpayPaymentId = razorpay_payment_id;
+    payment.razorpaySignature = razorpay_signature;
+    payment.status = "captured";
+    await payment.save();
+
+    const now = new Date();
+    const startDate = now;
+    const endDate = new Date(now);
+    endDate.setMonth(endDate.getMonth() + 1);
 
     await User.findByIdAndUpdate(userId, {
+      subscriptionStatus: "active",
+      subscriptionStartDate: startDate,
+      subscriptionEndDate: endDate,
+      plan: payment.plan,
       billingStatus: "active",
-      currentBillingPlan: requestedPlan,
+      currentBillingPlan: payment.plan,
       razorpayOrderId: razorpay_order_id,
     });
 
@@ -167,38 +248,73 @@ export const handleRazorpayWebhook = async (req, res, next) => {
     const eventName = event?.event;
 
     // common fields: payload.payment.entity etc
-    const payment = event?.payload?.payment?.entity || event?.payload?.payment || {};
-    const order = event?.payload?.payment?.entity?.order_id
-      ? { id: event.payload.payment.entity.order_id }
-      : event?.payload?.payment?.entity?.order_id;
+    const paymentEntity =
+      event?.payload?.payment?.entity || event?.payload?.payment || {};
 
-    const orderId = payment?.order_id || order?.id || event?.payload?.payment?.entity?.order_id;
+    const orderId =
+      paymentEntity?.order_id ||
+      event?.payload?.payment?.entity?.order_id ||
+      null;
 
-    const notes = payment?.notes || event?.payload?.payment?.entity?.notes || {};
+    const notes =
+      paymentEntity?.notes ||
+      event?.payload?.payment?.entity?.notes ||
+      {};
+
     const userId = notes?.userId;
-    const paidPlan = normalizePlan(notes?.plan);
+    const paidPlan = normalizePlanKey(notes?.plan);
 
-    if (!userId) {
+    if (!userId || !orderId) {
       // can still acknowledge to avoid retries
       return res.status(200).send("OK");
     }
 
-    // activate only on successful payment
-    const status = payment?.status;
+    const status = paymentEntity?.status;
     const active = status === "captured" || status === "authorized";
+
+    const paymentDoc = await Payment.findOne({
+      userId,
+      razorpayOrderId: orderId,
+    });
+
+    if (paymentDoc) {
+      paymentDoc.razorpayPaymentId =
+        paymentEntity?.id || paymentDoc.razorpayPaymentId;
+      paymentDoc.razorpaySignature = null;
+      paymentDoc.plan = paidPlan || paymentDoc.plan;
+      paymentDoc.status = active ? "captured" : "failed";
+      await paymentDoc.save();
+    }
 
     if (active) {
       await User.findByIdAndUpdate(userId, {
+        subscriptionStatus: "active",
+        subscriptionStartDate: new Date(),
+        subscriptionEndDate: (() => {
+          const d = new Date();
+          d.setMonth(d.getMonth() + 1);
+          return d;
+        })(),
+        plan: paidPlan,
         billingStatus: "active",
         currentBillingPlan: paidPlan,
-        razorpayOrderId: orderId || null,
+        razorpayOrderId: orderId,
       });
     } else {
       await User.findByIdAndUpdate(userId, {
+        subscriptionStatus: "failed",
         billingStatus: "failed",
-        razorpayOrderId: orderId || null,
+        razorpayOrderId: orderId,
       });
+
+      if (paymentDoc) {
+        await Payment.updateOne(
+          { _id: paymentDoc._id },
+          { $set: { status: "failed" } }
+        );
+      }
     }
+
 
     return res.status(200).send("OK");
   } catch (err) {

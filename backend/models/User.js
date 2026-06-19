@@ -108,6 +108,24 @@ const UserSchema = new mongoose.Schema(
       default: "free",
     },
 
+    subscriptionStatus: {
+      type: String,
+      enum: ["free", "pending", "active", "failed"],
+      default: "free",
+      index: true,
+    },
+
+    subscriptionStartDate: {
+      type: Date,
+      default: null,
+    },
+
+    subscriptionEndDate: {
+      type: Date,
+      default: null,
+    },
+
+
     instagramAccounts: {
       type: [InstagramAccountSchema],
       default: [],
@@ -205,6 +223,6 @@ UserSchema.methods.toJSON = function () {
 };
 
 const User =
-  mongoose.models.User || mongoose.model("Userr", UserSchema);
+  mongoose.models.User || mongoose.model("User", UserSchema);
 
 export default User;
