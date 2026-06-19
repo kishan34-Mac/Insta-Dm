@@ -50,6 +50,19 @@ const env = {
   INSTAGRAM_REDIRECT_URI:
     process.env
       .INSTAGRAM_REDIRECT_URI,
+
+  RAZORPAY_KEY_ID:
+    process.env.RAZORPAY_KEY_ID,
+
+  RAZORPAY_KEY_SECRET:
+    process.env.RAZORPAY_KEY_SECRET,
+
+  RAZORPAY_WEBHOOK_SECRET:
+    process.env.RAZORPAY_WEBHOOK_SECRET,
+
+  RAZORPAY_CURRENCY:
+    process.env.RAZORPAY_CURRENCY || "INR",
 };
 
 export default env;
+

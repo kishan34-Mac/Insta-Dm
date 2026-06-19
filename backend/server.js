@@ -15,6 +15,8 @@ import leadRoutes from "./routes/lead.routes.js";
 import instagramRoutes from "./routes/instagram.routes.js";
 import overviewRoutes from "./routes/overview.routes.js";
 import analyticsRoutes from "./routes/analytics.routes.js";
+import billingRoutes from "./routes/billing.routes.js";
+import { handleRazorpayWebhook } from "./controllers/billing.controller.js";
 
 import { errorHandler } from "./utils/errorHandler.js";
 
@@ -136,14 +138,28 @@ app.use("/api/v1/leads", leadRoutes);
 app.use("/api/v1/instagram", instagramRoutes);
 app.use("/api/v1/overview", overviewRoutes);
 app.use("/api/v1/analytics", analyticsRoutes);
+app.use("/api/v1/billing", billingRoutes);
+
+
+// Razorpay webhook raw body handler (must be before json parser consumption)
+// Because express.json() is registered above, we mount a raw handler that
+// directly delegates to the billing webhook controller.
+
+app.post(
+  "/api/v1/billing/razorpay/webhook",
+  express.raw({ type: "application/json" }),
+  (req, res) => handleRazorpayWebhook(req, res)
+);
 
 app.use((req, res) => {
+  console.warn("[404]", req.method, req.originalUrl);
   return res.status(404).json({
     success: false,
     message: "Route not found",
     path: req.originalUrl,
   });
 });
+
 
 app.use(errorHandler);
 

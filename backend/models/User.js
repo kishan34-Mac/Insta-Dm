@@ -118,6 +118,28 @@ const UserSchema = new mongoose.Schema(
       default: null,
     },
 
+    billingStatus: {
+      type: String,
+      enum: ["free", "pending", "active", "failed"],
+      default: "free",
+    },
+
+    currentBillingPlan: {
+      type: String,
+      enum: ["starter", "pro", "agency"],
+      default: null,
+    },
+
+    razorpayCustomerId: {
+      type: String,
+      default: null,
+    },
+
+    razorpayOrderId: {
+      type: String,
+      default: null,
+    },
+
     refreshTokens: {
       type: [String],
       default: [],
@@ -183,6 +205,6 @@ UserSchema.methods.toJSON = function () {
 };
 
 const User =
-  mongoose.models.User || mongoose.model("User", UserSchema);
+  mongoose.models.User || mongoose.model("Userr", UserSchema);
 
 export default User;
