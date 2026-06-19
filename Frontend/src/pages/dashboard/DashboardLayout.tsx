@@ -69,7 +69,7 @@ function AppSidebar({
               <p className="text-xs font-semibold">
                 Upgrade to Pro
               </p>
-
+ 
               <p className="text-[11px] text-muted-foreground mt-1">
                 Unlock unlimited DMs and advanced analytics.
               </p>
