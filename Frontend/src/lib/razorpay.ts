@@ -1,11 +1,15 @@
 let razorpayScriptPromise: Promise<void> | null = null;
 
+type RazorpayWindow = Window & {
+  Razorpay?: new (options: unknown) => { open: () => void };
+};
+
 export function loadRazorpayScript(keyId?: string) {
   if (typeof window === "undefined") {
     return Promise.reject(new Error("Razorpay can only be loaded in browser"));
   }
 
-  const w = window as any;
+  const w = window as RazorpayWindow;
   if (w.Razorpay) {
     return Promise.resolve();
   }
