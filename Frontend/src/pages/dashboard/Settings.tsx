@@ -1,3 +1,5 @@
+
+
 import {
   Instagram,
   CheckCircle2,
@@ -27,6 +29,9 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { useAuth } from "@/store/AuthContext";
 
+import { billingApi, type PlanKey } from "@/api/billing";
+import { loadRazorpayScript } from "@/lib/razorpay";
+
 export default function Settings() {
   const { user } = useAuth();
   const [accounts, setAccounts] =
@@ -34,6 +39,8 @@ export default function Settings() {
 
   const [loading, setLoading] =
     useState(true);
+  const [upgradingPlan, setUpgradingPlan] = useState<PlanKey | null>(null);
+
 
   const [disconnectingId, setDisconnectingId] =
     useState<string | null>(null);
@@ -81,9 +88,93 @@ export default function Settings() {
     fetchAccounts();
   }, []);
 
+  const startUpgrade = async (plan: PlanKey) => {
+    try {
+      if (upgradingPlan) return;
+
+      setUpgradingPlan(plan);
+      await loadRazorpayScript();
+
+      const order = await billingApi.createRazorpayOrder({ plan });
+
+      const w = window as any;
+      const rzp = new w.Razorpay({
+
+        key: order.keyId,
+        amount: order.amount,
+        currency: order.currency,
+        name: "Insta-Dm",
+        description: `Upgrade to ${plan.toUpperCase()}`,
+        order_id: order.orderId,
+        notes: {
+          plan,
+        },
+        handler: async function (response: any) {
+          const paymentId = response.razorpay_payment_id as string | undefined;
+          const orderId = (response.razorpay_order_id as string | undefined) || order.orderId;
+          const signature = response.razorpay_signature as string | undefined;
+
+
+          if (!paymentId || !signature) {
+            toast.error("Payment verification failed");
+            setUpgradingPlan(null);
+            return;
+          }
+
+          try {
+      const verifyRes = await fetch(`/api/v1/billing/razorpay/verify`, {
+
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${user?.accessToken || ""}`,
+              },
+              body: JSON.stringify({
+                razorpay_order_id: orderId,
+                razorpay_payment_id: paymentId,
+                razorpay_signature: signature,
+                plan,
+              }),
+            });
+
+            if (!verifyRes.ok) {
+              const errText = await verifyRes.text().catch(() => "");
+              throw new Error(
+                `Verify failed: ${verifyRes.status} ${errText}`
+              );
+            }
+
+            toast.success("Upgrade successful!");
+            window.location.reload();
+          } catch (e) {
+            console.error(e);
+            toast.error("Upgrade verification failed");
+          } finally {
+            setUpgradingPlan(null);
+          }
+        },
+        theme: {
+          color: "#7c3aed",
+        },
+        modal: {
+          ondismiss: function () {
+            setUpgradingPlan(null);
+          },
+        },
+      });
+
+      rzp.open();
+    } catch (e) {
+      console.error(e);
+      toast.error("Upgrade failed");
+      setUpgradingPlan(null);
+    }
+  };
+
   const handleDisconnect = async (
     igUserId: string
   ) => {
+
     try {
       setDisconnectingId(igUserId);
 
@@ -250,8 +341,71 @@ export default function Settings() {
 
       <section className="glass-card p-6">
         <h3 className="font-semibold">
+          Billing & Upgrade
+        </h3>
+
+        <p className="text-xs text-muted-foreground mt-1">
+          Upgrade your plan using Razorpay.
+        </p>
+
+        <div className="mt-5 space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium">Current plan</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {user?.plan ? user.plan.toUpperCase() : "FREE"}
+              </p>
+            </div>
+
+            <Button
+              variant="outline"
+              disabled={upgradingPlan !== null}
+              onClick={() => startUpgrade("starter")}
+              className="whitespace-nowrap"
+            >
+              Upgrade Starter
+            </Button>
+          </div>
+
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium">Need more power?</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Choose Pro or Agency.
+              </p>
+            </div>
+
+            <div className="flex gap-2 flex-wrap justify-end">
+              <Button
+                variant="outline"
+                disabled={upgradingPlan !== null}
+                onClick={() => startUpgrade("pro")}
+              >
+                Upgrade Pro
+              </Button>
+              <Button
+                variant="outline"
+                disabled={upgradingPlan !== null}
+                onClick={() => startUpgrade("agency")}
+              >
+                Upgrade Agency
+              </Button>
+            </div>
+          </div>
+
+          {upgradingPlan !== null && (
+            <p className="text-xs text-muted-foreground">
+              Opening Razorpay checkout for <span className="font-medium">{upgradingPlan}</span>...
+            </p>
+          )}
+        </div>
+      </section>
+
+      <section className="glass-card p-6">
+        <h3 className="font-semibold">
           Notifications
         </h3>
+
 
         <div className="mt-5 space-y-4">
           {[
