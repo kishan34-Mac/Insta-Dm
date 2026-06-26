@@ -67,7 +67,7 @@ function AppSidebar({
           <div className="mt-auto p-4 space-y-3">
             <div className="rounded-xl border border-sidebar-border bg-gradient-to-br from-primary/15 to-accent/10 p-4">
               <p className="text-xs font-semibold">
-                Upgrade to Pro
+                Upgrade to Pro?
               </p>
  
               <p className="text-[11px] text-muted-foreground mt-1">
