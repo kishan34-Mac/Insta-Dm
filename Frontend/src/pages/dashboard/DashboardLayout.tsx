@@ -80,7 +80,7 @@ function AppSidebar({
                 className="w-full mt-3"
                 asChild
               >
-                <Link to="/#pricing">
+                <Link to="/dashboard/settings?upgradePlan=pro">
                   Upgrade
                 </Link>
               </Button>
