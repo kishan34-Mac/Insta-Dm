@@ -75,10 +75,21 @@ export default function Settings() {
     const params = new URLSearchParams(window.location.search);
     const success = params.get("success");
     const error = params.get("error");
+    const upgradePlan = params.get("upgradePlan") as PlanKey | null;
+
+    const clearQuery = () => {
+      window.history.replaceState(
+        {},
+        document.title,
+        window.location.pathname
+      );
+    };
 
     if (success === "instagram_connected") {
-      toast.success("Instagram account connected successfully!");
-      window.history.replaceState({}, document.title, window.location.pathname);
+      toast.success(
+        "Instagram account connected successfully!"
+      );
+      clearQuery();
     } else if (error) {
       let errorMsg = "Connection failed";
       if (error === "no_instagram_business_account") {
@@ -89,11 +100,27 @@ export default function Settings() {
         errorMsg = `Connection failed: ${error.replace(/_/g, " ")}`;
       }
       toast.error(errorMsg);
-      window.history.replaceState({}, document.title, window.location.pathname);
+      clearQuery();
+    }
+
+    // Auto-upgrade from landing pricing (logged-in)
+    if (upgradePlan && user) {
+      // Show required notification before Razorpay opens
+      toast.message(
+        "Click and pay to upgrade the plan"
+      );
+
+      // Prevent re-triggering on refresh/back button by clearing query
+      clearQuery();
+
+      // Only trigger once per mount
+      startUpgrade(upgradePlan);
     }
 
     fetchAccounts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
 
   const startUpgrade = async (plan: PlanKey) => {
     try {
@@ -121,18 +148,19 @@ export default function Settings() {
         },
         handler: async function (response: unknown) {
           const paymentId =
-            (response as any)?.razorpay_payment_id as
-              | string
-              | undefined;
+            (response as { razorpay_payment_id?: string })
+              ?.razorpay_payment_id;
 
           const signature =
-            (response as any)?.razorpay_signature as
-              | string
-              | undefined;
+            (response as { razorpay_signature?: string })
+              ?.razorpay_signature;
+
 
           const orderId =
-            (response as any)?.razorpay_order_id ??
+            (response as { razorpay_order_id?: string })
+              ?.razorpay_order_id ??
             order.orderId;
+
 
 
 

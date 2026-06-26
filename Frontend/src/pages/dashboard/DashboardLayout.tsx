@@ -79,6 +79,7 @@ function AppSidebar({
                 size="sm"
                 className="w-full mt-3"
                 asChild
+                
               >
                 <Link to="/#pricing">
                   Upgrade
