@@ -8,6 +8,12 @@ import {
   toggleCampaignStatus,
 } from "../controllers/campaign.controller.js";
 import { protect } from "../middleware/auth.middleware.js";
+import { validate } from "../validators/auth.validator.js";
+import {
+  createCampaignSchema,
+  updateCampaignSchema,
+  getCampaignByIdSchema,
+} from "../validators/campaign.validator.js";
 
 const router = express.Router();
 
@@ -15,13 +21,13 @@ router.use(protect);
 
 router.route("/")
   .get(getCampaigns)
-  .post(createCampaign);
+  .post(validate(createCampaignSchema), createCampaign);
 
 router.route("/:id")
-  .get(getCampaignById)
-  .put(updateCampaign)
-  .delete(deleteCampaign);
+  .get(validate(getCampaignByIdSchema), getCampaignById)
+  .put(validate(updateCampaignSchema), updateCampaign)
+  .delete(validate(getCampaignByIdSchema), deleteCampaign);
 
-router.patch("/:id/toggle", toggleCampaignStatus);
+router.patch("/:id/toggle", validate(getCampaignByIdSchema), toggleCampaignStatus);
 
 export default router;

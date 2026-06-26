@@ -60,8 +60,8 @@ export function SidebarNav() {
                   <NavLink
                     to={item.url}
                     end={item.end}
-                    className="hover:bg-muted rounded-xl transition-all"
-                    activeClassName="bg-gradient-primary text-primary-foreground hover:bg-gradient-primary [&>svg]:text-primary-foreground font-medium"
+                    className="hover:bg-muted rounded-sm transition-colors duration-150"
+                    activeClassName="bg-primary text-primary-foreground hover:bg-primary [&>svg]:text-primary-foreground font-medium shadow-sm"
                   >
                     <item.icon className="h-4 w-4" />
                     <span>{item.title}</span>
@@ -83,8 +83,8 @@ export function SidebarNav() {
                   <NavLink
                     to={item.url}
                     end={item.end}
-                    className="hover:bg-muted rounded-xl transition-all"
-                    activeClassName="bg-gradient-primary text-primary-foreground hover:bg-gradient-primary [&>svg]:text-primary-foreground font-medium"
+                    className="hover:bg-muted rounded-sm transition-colors duration-150"
+                    activeClassName="bg-primary text-primary-foreground hover:bg-primary [&>svg]:text-primary-foreground font-medium shadow-sm"
                   >
                     <item.icon className="h-4 w-4" />
                     <span>{item.title}</span>

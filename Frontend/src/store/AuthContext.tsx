@@ -12,21 +12,19 @@ import {
   type AuthPayload,
   type AuthUser,
 } from "@/api/auth";
-
-const STORAGE_KEY =
-  "athenura.auth";
+import http from "@/api/http";
 
 type AuthState = {
   user: AuthUser | null;
 
   accessToken: string | null;
 
-  refreshToken: string | null;
+  loading: boolean;
 
   login: (input: {
     email: string;
     password: string;
-  }) => Promise<void>;
+  }) => Promise<any>;
 
   register: (input: {
     name: string;
@@ -39,9 +37,15 @@ type AuthState = {
     credential: string,
     mode: "login" | "signup",
     plan?: string
-  ) => Promise<void>;
+  ) => Promise<any>;
 
   logout: () => Promise<void>;
+
+  verifyMfa: (input: {
+    code?: string;
+    tempToken: string;
+    recoveryCode?: string;
+  }) => Promise<void>;
 };
 
 const AuthContext =
@@ -49,143 +53,52 @@ const AuthContext =
     null
   );
 
-const readStoredAuth =
-  (): AuthPayload | null => {
-    try {
-      const raw =
-        localStorage.getItem(
-          STORAGE_KEY
-        );
-
-      if (!raw) {
-        return null;
-      }
-
-      const payload =
-        JSON.parse(raw);
-
-      if (
-        !payload?.user ||
-        !payload?.accessToken
-      ) {
-        localStorage.removeItem(
-          STORAGE_KEY
-        );
-
-        return null;
-      }
-
-      return payload;
-    } catch {
-      localStorage.removeItem(
-        STORAGE_KEY
-      );
-
-      return null;
-    }
-  };
-
 export function AuthProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [auth, setAuth] =
-    useState<AuthPayload | null>(
-      () => readStoredAuth()
-    );
+  const [auth, setAuth] = useState<AuthPayload | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const persistAuth =
-    useCallback(
-      (
-        payload:
-          | AuthPayload
-          | null
-      ) => {
-        setAuth(payload);
-
-        if (payload) {
-          localStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify(payload)
-          );
-
-          localStorage.setItem(
-            "token",
-            payload.accessToken
-          );
-
-          localStorage.setItem(
-            "accessToken",
-            payload.accessToken
-          );
-
-          if (
-            payload.refreshToken
-          ) {
-            localStorage.setItem(
-              "refreshToken",
-              payload.refreshToken
-            );
-          }
-
-          localStorage.setItem(
-            "user",
-            JSON.stringify(
-              payload.user
-            )
-          );
-
-          console.log(
-            "TOKEN SAVED:",
-            payload.accessToken
-          );
-        } else {
-          localStorage.removeItem(
-            STORAGE_KEY
-          );
-
-          localStorage.removeItem(
-            "token"
-          );
-
-          localStorage.removeItem(
-            "accessToken"
-          );
-
-          localStorage.removeItem(
-            "refreshToken"
-          );
-
-          localStorage.removeItem(
-            "user"
-          );
-        }
-      },
-      []
-    );
-
+  // Silent bootstrap: attempt to refresh tokens on app load using HTTP-only cookies
   useEffect(() => {
-    const handleAuthRefresh = (
-      event: Event
-    ) => {
-      const customEvent =
-        event as CustomEvent<AuthPayload>;
+    const bootstrapSession = async () => {
+      try {
+        const refreshResponse = await http.post("/auth/refresh");
+        const payload = refreshResponse.data.data;
+        if (payload?.user && payload?.accessToken) {
+          setAuth({
+            user: payload.user,
+            accessToken: payload.accessToken,
+            refreshToken: "",
+          });
+        }
+      } catch (err) {
+        console.log("No active session recovered on startup");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      setAuth(
-        customEvent.detail
-      );
+    bootstrapSession();
+  }, []);
+
+  // Listen to background logout event from HTTP client interceptor
+  useEffect(() => {
+    const handleAuthLogout = () => {
+      setAuth(null);
     };
 
     window.addEventListener(
-      "athenura:auth-refresh",
-      handleAuthRefresh
+      "athenura:auth-logout",
+      handleAuthLogout
     );
 
     return () =>
       window.removeEventListener(
-        "athenura:auth-refresh",
-        handleAuthRefresh
+        "athenura:auth-logout",
+        handleAuthLogout
       );
   }, []);
 
@@ -200,11 +113,16 @@ export function AuthProvider({
             input
           );
 
-        persistAuth(response);
+        if (response.mfaRequired) {
+          return response;
+        }
+
+        setAuth(response);
+        return response;
       },
-      [persistAuth]
+      []
     );
-//nnn
+
   const register =
     useCallback(
       async (input: {
@@ -218,9 +136,9 @@ export function AuthProvider({
             input
           );
 
-        persistAuth(response);
+        setAuth(response);
       },
-      [persistAuth]
+      []
     );
 
   const loginWithGoogle =
@@ -239,28 +157,46 @@ export function AuthProvider({
             plan
           );
 
-        persistAuth(response);
+        if (response.mfaRequired) {
+          return response;
+        }
+
+        setAuth(response);
+        return response;
       },
-      [persistAuth]
+      []
+    );
+
+  const verifyMfa =
+    useCallback(
+      async (input: {
+        code?: string;
+        tempToken: string;
+        recoveryCode?: string;
+      }) => {
+        const response = await http.post("/auth/mfa/login", input);
+        const payload = response.data.data;
+        if (payload?.user && payload?.accessToken) {
+          setAuth({
+            user: payload.user,
+            accessToken: payload.accessToken,
+            refreshToken: "",
+          });
+        }
+      },
+      []
     );
 
   const logout =
     useCallback(async () => {
       try {
-        if (
-          auth?.accessToken
-        ) {
-          await authApi.logout(
-            auth.refreshToken ??
-              undefined
-          );
-        }
+        await authApi.logout();
       } catch (error) {
         console.error(error);
       }
 
-      persistAuth(null);
-    }, [auth, persistAuth]);
+      setAuth(null);
+    }, []);
 
   const value =
     useMemo<AuthState>(
@@ -272,9 +208,7 @@ export function AuthProvider({
           auth?.accessToken ??
           null,
 
-        refreshToken:
-          auth?.refreshToken ??
-          null,
+        loading,
 
         login,
 
@@ -283,13 +217,17 @@ export function AuthProvider({
         loginWithGoogle,
 
         logout,
+
+        verifyMfa,
       }),
       [
         auth,
+        loading,
         login,
         register,
         loginWithGoogle,
         logout,
+        verifyMfa,
       ]
     );
 
@@ -297,7 +235,7 @@ export function AuthProvider({
     <AuthContext.Provider
       value={value}
     >
-      {children}
+      {!loading ? children : <div className="min-h-screen bg-background" />}
     </AuthContext.Provider>
   );
 }

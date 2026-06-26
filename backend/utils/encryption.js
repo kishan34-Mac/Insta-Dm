@@ -30,7 +30,7 @@ export const decrypt = (encryptedText) => {
   try {
     const parts = encryptedText.split(":");
     if (parts.length !== 3) {
-      throw new Error("Invalid encrypted text format");
+      return encryptedText; // Treat as legacy plaintext
     }
 
     const iv = Buffer.from(parts[0], "hex");
@@ -46,8 +46,8 @@ export const decrypt = (encryptedText) => {
 
     return decrypted;
   } catch (err) {
-    console.error("Decryption error:", err.message);
-    throw new Error("Failed to decrypt data");
+    console.warn("Decryption failed, returning raw value (might be legacy plaintext):", err.message);
+    return encryptedText;
   }
 };
 

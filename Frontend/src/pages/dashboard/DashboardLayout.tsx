@@ -65,7 +65,7 @@ function AppSidebar({
 
         {!collapsed && (
           <div className="mt-auto p-4 space-y-3">
-            <div className="rounded-xl border border-sidebar-border bg-gradient-to-br from-primary/15 to-accent/10 p-4">
+            <div className="rounded-lg border border-sidebar-border bg-sidebar-accent/50 p-4">
               <p className="text-xs font-semibold">
                 Upgrade to Pro
               </p>
@@ -162,7 +162,7 @@ export default function DashboardLayout() {
               <ThemeToggle />
 
               <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-gradient-primary text-primary-foreground text-xs">
+                <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
                   {initials}
                 </AvatarFallback>
               </Avatar>

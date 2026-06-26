@@ -19,15 +19,9 @@ const FooterLink = ({ href, children }: { href: string; children: React.ReactNod
     <li>
       <a
         href={href}
-        className="group inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors"
+        className="text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
-        <span className="inline-block transition-transform duration-300 group-hover:translate-x-3 group-hover:text-foreground">
-          {children}
-        </span>
-        <span
-          className="inline-block h-[1px] w-0 transition-[width] duration-300 group-hover:w-4 bg-gradient-to-r from-primary to-accent"
-          aria-hidden
-        />
+        {children}
       </a>
     </li>
   );
@@ -46,7 +40,7 @@ const SocialLink = ({
     <a
       href={href}
       aria-label={label}
-      className="inline-flex h-9 w-9 items-center justify-center rounded-xl glass-card-hover border border-[rgba(255,255,255,.15)] bg-[rgba(255,255,255,.04)] text-muted-foreground transition-all duration-300 hover:text-foreground hover:scale-110"
+      className="inline-flex h-9 w-9 items-center justify-center rounded-sm border border-border bg-secondary hover:bg-accent/40 text-muted-foreground transition-colors hover:text-foreground"
       target="_blank"
       rel="noreferrer"
     >
@@ -71,59 +65,15 @@ export function Footer() {
   ] as const;
 
   return (
-    <footer className="mt-8">
-      <div
-        className="relative overflow-hidden rounded-2xl border-t border-[rgba(255,255,255,0.08)] bg-[var(--footer-bg)] backdrop-blur-12"
-      >
-        {/* footer theme variables + background (dark glass continuation) */}
-        <style>{`
-          .footer-theme {
-            --footer-bg: #ffffff;
-            --footer-surface: rgba(255,255,255,0.03);
-            --footer-border: rgba(255,255,255,0.08);
-            --footer-heading: #000000;
-            --footer-text: rgba(0,0,0,0.65);
-            --footer-hover: #000000;
-            --footer-purple: rgba(139,92,246,0.5);
-            --footer-blue: rgba(59,130,246,0.4);
-          }
-          .dark .footer-theme {
-            --footer-bg: radial-gradient(circle at top left, rgba(139,92,246,0.12), transparent 40%),
-                         radial-gradient(circle at top right, rgba(59,130,246,0.08), transparent 40%),
-                         linear-gradient(180deg, #050816 0%, #0B1020 45%, #111827 100%);
-            --footer-surface: rgba(255,255,255,0.03);
-            --footer-border: rgba(255,255,255,0.08);
-            --footer-heading: #ffffff;
-            --footer-text: rgba(255,255,255,0.65);
-            --footer-hover: #ffffff;
-          }
-        `}</style>
-
-        <div className="absolute inset-0 footer-theme" />
-        <div className="absolute inset-0">
-          {/* dark glass ambient continuation (dark theme only) */}
-          <div className="dark:absolute dark:inset-0 hidden dark:block">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(139,92,246,0.12),transparent_40%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.08),transparent_40%)]" />
-            <div className="absolute inset-0 bg-gradient-to-b from-[#050816] via-[#0B1020] to-[#111827] opacity-95" />
-          </div>
-
-          {/* light theme subtle glow */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(139,92,246,0.10),transparent_40%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.08),transparent_40%)] dark:hidden" />
-        </div>
-
-
-        {/* top border */}
-        <div className="absolute left-0 right-0 top-0 h-[1px] bg-gradient-to-r from-primary/30 via-accent/30 to-primary/30" />
-
-        <div className="relative px-4 py-6 sm:px-6 lg:px-8">
-
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.35 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            className="container"
-          >
+    <footer className="mt-16 border-t border-border bg-card">
+      <div className="relative px-4 py-12 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.35 }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
+          className="container"
+        >
             {/* Main grid */}
             <div className="grid gap-20 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
               {/* Brand */}
@@ -266,8 +216,6 @@ export function Footer() {
 
           </motion.div>
         </div>
-      </div>
     </footer>
   );
 }
-
