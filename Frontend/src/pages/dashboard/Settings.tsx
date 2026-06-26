@@ -32,7 +32,20 @@ import { useAuth } from "@/store/AuthContext";
 import { billingApi, type PlanKey } from "@/api/billing";
 import { loadRazorpayScript } from "@/lib/razorpay";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+
 export default function Settings() {
+
   const { user } = useAuth();
   const [accounts, setAccounts] =
     useState<InstagramAccount[]>([]);
@@ -41,11 +54,33 @@ export default function Settings() {
     useState(true);
   const [upgradingPlan, setUpgradingPlan] = useState<PlanKey | null>(null);
 
+
+
   const planToRequestKey = (plan: PlanKey) => {
     if (plan === "starter") return "STARTER";
     if (plan === "pro") return "PRO";
     return "AGENCY";
   };
+
+  const normalizeUserPlan = (p: unknown): PlanKey | null => {
+    if (!p) return null;
+    if (typeof p !== "string") return null;
+    const n = p.trim().toLowerCase();
+    if (n === "starter" || n === "pro" || n === "agency") return n;
+    return null;
+  };
+
+  const getQueryPlan = (key: string): PlanKey | null => {
+    const params = new URLSearchParams(window.location.search);
+    const raw = params.get(key);
+    if (!raw) return null;
+
+    const n = raw.trim().toLowerCase();
+    if (n === "starter" || n === "pro" || n === "agency") return n;
+    return null;
+  };
+
+
 
 
 
@@ -75,21 +110,10 @@ export default function Settings() {
     const params = new URLSearchParams(window.location.search);
     const success = params.get("success");
     const error = params.get("error");
-    const upgradePlan = params.get("upgradePlan") as PlanKey | null;
-
-    const clearQuery = () => {
-      window.history.replaceState(
-        {},
-        document.title,
-        window.location.pathname
-      );
-    };
 
     if (success === "instagram_connected") {
-      toast.success(
-        "Instagram account connected successfully!"
-      );
-      clearQuery();
+      toast.success("Instagram account connected successfully!");
+      window.history.replaceState({}, document.title, window.location.pathname);
     } else if (error) {
       let errorMsg = "Connection failed";
       if (error === "no_instagram_business_account") {
@@ -100,29 +124,14 @@ export default function Settings() {
         errorMsg = `Connection failed: ${error.replace(/_/g, " ")}`;
       }
       toast.error(errorMsg);
-      clearQuery();
-    }
-
-    // Auto-upgrade from landing pricing (logged-in)
-    if (upgradePlan && user) {
-      // Show required notification before Razorpay opens
-      toast.message(
-        "Click and pay to upgrade the plan"
-      );
-
-      // Prevent re-triggering on refresh/back button by clearing query
-      clearQuery();
-
-      // Only trigger once per mount
-      startUpgrade(upgradePlan);
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
 
     fetchAccounts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-
   const startUpgrade = async (plan: PlanKey) => {
+
     try {
       if (upgradingPlan) return;
 
@@ -135,7 +144,13 @@ export default function Settings() {
       });
 
       const w = window as unknown as { Razorpay?: new (options: unknown) => { open: () => void } };
-      const rzp = new (w.Razorpay as unknown as { open: () => void })({
+      if (!w.Razorpay) {
+        toast.error("Razorpay is not available");
+        setUpgradingPlan(null);
+        return;
+      }
+
+      const rzp = new w.Razorpay({
         key: order.keyId,
         amount: order.amount,
         currency: order.currency,
@@ -147,14 +162,14 @@ export default function Settings() {
           plan,
         },
         handler: async function (response: unknown) {
-          const paymentId =
+      const paymentId =
             (response as { razorpay_payment_id?: string })
               ?.razorpay_payment_id;
+
 
           const signature =
             (response as { razorpay_signature?: string })
               ?.razorpay_signature;
-
 
           const orderId =
             (response as { razorpay_order_id?: string })
@@ -209,9 +224,45 @@ export default function Settings() {
 
   };
 
+  const [planUpgradePrompt, setPlanUpgradePrompt] = useState<PlanKey | null>(null);
+  const [planUpgradePromptShown, setPlanUpgradePromptShown] = useState(false);
+
+  useEffect(() => {
+    const upgradePlan = getQueryPlan("upgradePlan");
+    if (!upgradePlan) return;
+
+    const currentPlan = normalizeUserPlan(user?.plan);
+    if (currentPlan && currentPlan === upgradePlan) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return;
+    }
+
+    setPlanUpgradePrompt(upgradePlan);
+  }, [user?.plan]);
+
+  useEffect(() => {
+    if (!planUpgradePrompt) return;
+    if (planUpgradePromptShown) return;
+    setPlanUpgradePromptShown(true);
+  }, [planUpgradePrompt, planUpgradePromptShown]);
+
+  const handleUpgradePrompt = async () => {
+    if (!planUpgradePrompt) return;
+
+
+    // Clean query param immediately so the prompt won't re-trigger.
+    window.history.replaceState({}, document.title, window.location.pathname);
+
+    setPlanUpgradePromptShown(true);
+    await startUpgrade(planUpgradePrompt);
+    setPlanUpgradePrompt(null);
+  };
+
+
   const handleDisconnect = async (
     igUserId: string
   ) => {
+
 
     try {
       setDisconnectingId(igUserId);
@@ -377,10 +428,37 @@ export default function Settings() {
         </div>
       </section>
 
+      <AlertDialog
+        open={!!planUpgradePrompt}
+        onOpenChange={(open) => {
+          // If user cancels/closes the dialog, clear prompt state so it won't reopen.
+          if (!open) {
+            setPlanUpgradePrompt(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Click and pay to upgrade</AlertDialogTitle>
+            <AlertDialogDescription>
+              Upgrade to <span className="font-medium">{planUpgradePrompt?.toUpperCase()}</span> plan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Not now</AlertDialogCancel>
+            <AlertDialogAction onClick={handleUpgradePrompt}>
+              Upgrade Now
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+
       <section className="glass-card p-6">
         <h3 className="font-semibold">
           Billing & Upgrade
         </h3>
+
 
         <p className="text-xs text-muted-foreground mt-1">
           Upgrade your plan using Razorpay.
