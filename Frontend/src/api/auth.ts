@@ -2,36 +2,42 @@ import http from "./http";
 
 export type AuthUser = {
   _id: string;
-
   name: string;
-
   email: string;
-
+  role: "user" | "admin";
   plan: "free" | "starter" | "pro" | "agency";
 };
 
 export type AuthPayload = {
   user: AuthUser;
-
   accessToken: string;
+  refreshToken?: string;
+};
 
-  refreshToken: string;
+export type MfaLoginPayload = {
+  mfaRequired: true;
+  tempToken: string;
 };
 
 export type ApiResponse<T> = {
   success: boolean;
-
   message?: string;
-
   data: T;
 };
 
 export const authApi = {
+  /* ==========================================================
+      REGISTER
+  ========================================================== */
+
   register: async (input: {
     name: string;
     email: string;
     password: string;
     plan?: string;
+
+    isAdmin?: boolean;
+    adminSecret?: string;
   }) => {
     try {
       const response = await http.post<ApiResponse<AuthPayload>>(
@@ -42,23 +48,33 @@ export const authApi = {
       return response.data.data;
     } catch (error) {
       const err = error as {
-        response?: { data?: { message?: string } };
+        response?: {
+          data?: {
+            message?: string;
+          };
+        };
         message?: string;
       };
-      const message =
-        err?.response?.data?.message || err.message || "Registration failed";
-      console.error("Register error:", message);
-      throw new Error(message);
+
+      throw new Error(
+        err?.response?.data?.message || err.message || "Registration failed",
+      );
     }
   },
 
+  /* ==========================================================
+      LOGIN
+  ========================================================== */
+
   login: async (input: {
     email: string;
-
     password: string;
+
+    isAdmin?: boolean;
+    adminSecret?: string;
   }) => {
     try {
-      const response = await http.post<ApiResponse<AuthPayload>>(
+      const response = await http.post<ApiResponse<AuthPayload | MfaLoginPayload>>(
         "/auth/login",
         input,
       );
@@ -66,15 +82,23 @@ export const authApi = {
       return response.data.data;
     } catch (error) {
       const err = error as {
-        response?: { data?: { message?: string } };
+        response?: {
+          data?: {
+            message?: string;
+          };
+        };
         message?: string;
       };
-      const message =
-        err?.response?.data?.message || err.message || "Login failed";
-      console.error("Login error:", message);
-      throw new Error(message);
+
+      throw new Error(
+        err?.response?.data?.message || err.message || "Login failed",
+      );
     }
   },
+
+  /* ==========================================================
+      GOOGLE LOGIN
+  ========================================================== */
 
   googleAuth: async (
     credential: string,
@@ -84,66 +108,58 @@ export const authApi = {
     try {
       const response = await http.post<ApiResponse<AuthPayload>>(
         "/auth/google",
-        { credential, mode, plan },
+        {
+          credential,
+          mode,
+          plan,
+        },
       );
 
       return response.data.data;
     } catch (error) {
       const err = error as {
-        response?: { data?: { message?: string } };
+        response?: {
+          data?: {
+            message?: string;
+          };
+        };
         message?: string;
       };
-      const message =
-        err?.response?.data?.message || err.message || "Google Login failed";
-      console.error("Google Login error:", message);
-      throw new Error(message);
+
+      throw new Error(
+        err?.response?.data?.message || err.message || "Google Login failed",
+      );
     }
   },
+
+  /* ==========================================================
+      CURRENT USER
+  ========================================================== */
 
   me: async () => {
-    try {
-      const response = await http.get<
-        ApiResponse<{
-          user: AuthUser;
-        }>
-      >("/auth/me");
+    const response = await http.get<
+      ApiResponse<{
+        user: AuthUser;
+      }>
+    >("/auth/me");
 
-      return response.data;
-    } catch (error) {
-      const err = error as {
-        response?: { data?: { message?: string } };
-        message?: string;
-      };
-      const message =
-        err?.response?.data?.message || err.message || "Failed to fetch user";
-      console.error("Fetch user error:", message);
-      throw new Error(message);
-    }
+    return response.data;
   },
 
+  /* ==========================================================
+      LOGOUT
+  ========================================================== */
+
   logout: async (refreshToken?: string) => {
-    try {
-      const response = await http.post<ApiResponse<void>>("/auth/logout", {
-        refreshToken,
-      });
+    const response = await http.post<ApiResponse<void>>("/auth/logout", {
+      refreshToken,
+    });
 
-      localStorage.removeItem("token");
+    localStorage.removeItem("token");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("user");
 
-      localStorage.removeItem("refreshToken");
-
-      localStorage.removeItem("user");
-
-      return response.data;
-    } catch (error) {
-      const err = error as {
-        response?: { data?: { message?: string } };
-        message?: string;
-      };
-      const message =
-        err?.response?.data?.message || err.message || "Logout failed";
-      console.error("Logout error:", message);
-      throw new Error(message);
-    }
+    return response.data;
   },
 };
 

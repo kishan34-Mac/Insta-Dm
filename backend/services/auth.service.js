@@ -1,20 +1,36 @@
 import { AppError } from "../utils/errorHandler.js";
-import { generateTokens, verifyRefreshToken, verifyAccessToken } from "../utils/jwt.js";
+import {
+  generateTokens,
+  verifyRefreshToken,
+  verifyAccessToken,
+} from "../utils/jwt.js";
+
 import User from "../models/User.js";
+
 import crypto from "crypto";
 import axios from "axios";
 import jwt from "jsonwebtoken";
+
 import { OAuth2Client } from "google-auth-library";
+
 import env from "../config/env.js";
+
 import { encrypt, decrypt } from "../utils/encryption.js";
-import { generateBase32Secret, verifyTOTP } from "../utils/totp.js";
+
+import {
+  generateBase32Secret,
+  verifyTOTP,
+} from "../utils/totp.js";
+
 import {
   sendVerificationEmail,
   sendPasswordResetEmail,
   sendPasswordResetConfirmation,
 } from "./email.service.js";
 
-const googleClient = new OAuth2Client(env.GOOGLE_CLIENT_ID);
+const googleClient = new OAuth2Client(
+  env.GOOGLE_CLIENT_ID
+);
 
 const buildAuthPayload = (user, tokens) => ({
   user: user.toJSON(),
@@ -22,38 +38,85 @@ const buildAuthPayload = (user, tokens) => ({
   refreshToken: tokens.refreshToken,
 });
 
-export const registerUser = async ({ email, password, name, plan }) => {
+export const registerUser = async ({
+  email,
+  password,
+  name,
+  plan,
+  isAdmin,
+  adminSecret,
+}) => {
   const existingUser = await User.findOne({ email });
+
   if (existingUser) {
-    throw new AppError("User with this email already exists", 409);
+    throw new AppError(
+      "User with this email already exists",
+      409
+    );
   }
 
-  // Create verification token (expiring in 24 hours)
-  const verificationRawToken = crypto.randomBytes(32).toString("hex");
+  let role = "user";
+
+  if (isAdmin) {
+    if (!adminSecret) {
+      throw new AppError(
+        "Admin Secret Key is required",
+        400
+      );
+    }
+
+    if (adminSecret !== process.env.ADMIN_SECRET) {
+      throw new AppError(
+        "Invalid Admin Secret Key",
+        403
+      );
+    }
+
+    role = "admin";
+  }
+
+  const verificationRawToken =
+    crypto.randomBytes(32).toString("hex");
+
   const verificationToken = crypto
     .createHash("sha256")
     .update(verificationRawToken)
     .digest("hex");
-  const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+  const verificationExpires = new Date(
+    Date.now() + 24 * 60 * 60 * 1000
+  );
 
   const user = new User({
     email,
     password,
     name,
+    role,
     plan: plan || "free",
+
     isVerified: false,
     verificationToken,
     verificationExpires,
   });
+
   await user.save();
 
-  // Send verification email asynchronously (non-blocking)
-  sendVerificationEmail(email, verificationRawToken).catch((err) =>
-    console.error("Failed to send verification email:", err.message)
+  sendVerificationEmail(
+    email,
+    verificationRawToken
+  ).catch((err) =>
+    console.error(
+      "Failed to send verification email:",
+      err.message
+    )
   );
 
-  const tokens = generateTokens(user._id.toString());
+  const tokens = generateTokens(
+    user._id.toString()
+  );
+
   user.addRefreshToken(tokens.refreshToken);
+
   await user.save();
 
   return buildAuthPayload(user, tokens);
@@ -65,108 +128,208 @@ export const googleAuthUser = async (credential, mode, plan) => {
       idToken: credential,
       audience: env.GOOGLE_CLIENT_ID,
     });
+
     const payload = ticket.getPayload();
+
     if (!payload) {
-      throw new AppError("Invalid Google token payload", 401);
+      throw new AppError(
+        "Invalid Google token payload",
+        401
+      );
     }
 
-    const { email, name, picture } = payload;
+    const { email, name } = payload;
 
     if (!email) {
-      throw new AppError("Could not retrieve email from Google token payload", 401);
+      throw new AppError(
+        "Could not retrieve email from Google",
+        401
+      );
     }
 
-    let user = await User.findOne({ email }).select("+refreshTokens");
+    let user = await User.findOne({
+      email,
+    }).select("+refreshTokens");
 
     if (!user) {
       if (mode === "login") {
-        throw new AppError("Account not found. Please sign up first.", 404);
+        throw new AppError(
+          "Account not found. Please sign up first.",
+          404
+        );
       }
-      const randomPassword = crypto.randomBytes(32).toString("hex");
+
+      const randomPassword =
+        crypto.randomBytes(32).toString("hex");
+
       user = new User({
         email,
         name,
         password: randomPassword,
         plan: plan || "free",
-        isVerified: true, // pre-verified by Google identity
+        isVerified: true,
       });
+
       await user.save();
     } else {
       if (plan && user.plan !== plan) {
         user.plan = plan;
       }
+
       if (!user.isVerified) {
         user.isVerified = true;
       }
+
       await user.save();
     }
 
-    const tokens = generateTokens(user._id.toString());
+    const tokens = generateTokens(
+      user._id.toString()
+    );
+
     user.addRefreshToken(tokens.refreshToken);
+
     await user.save();
 
     return buildAuthPayload(user, tokens);
-  } catch (error) {
-    console.error("Google Auth Error:", error.message);
-    if (error instanceof AppError) throw error;
-    throw new AppError("Invalid Google credential", 401);
+  } catch (err) {
+    console.error(err);
+
+    if (err instanceof AppError) {
+      throw err;
+    }
+
+    throw new AppError(
+      "Invalid Google credential",
+      401
+    );
   }
 };
 
-export const loginUser = async ({ email, password }) => {
-  const user = await User.findOne({ email }).select(
+
+
+
+export const loginUser = async ({
+  email,
+  password,
+  isAdmin = false,
+  adminSecret,
+}) => {
+  const user = await User.findOne({
+    email,
+  }).select(
     "+password +refreshTokens +loginAttempts +lockUntil +mfaEnabled +mfaSecret"
   );
+
   if (!user) {
-    throw new AppError("Invalid email or password", 401);
+    throw new AppError(
+      "Invalid email or password",
+      401
+    );
   }
 
   if (user.isLocked) {
     throw new AppError(
-      "Account is temporarily locked due to multiple failed login attempts. Please try again later.",
+      "Account is temporarily locked due to multiple failed login attempts.",
       403
     );
   }
 
-  const isValidPassword = await user.comparePassword(password);
+  const isValidPassword =
+    await user.comparePassword(password);
+
   if (!isValidPassword) {
     user.loginAttempts += 1;
+
     if (user.loginAttempts >= 5) {
-      user.lockUntil = Date.now() + 15 * 60 * 1000;
+      user.lockUntil =
+        Date.now() + 15 * 60 * 1000;
     }
+
     await user.save();
-    throw new AppError("Invalid email or password", 401);
+
+    throw new AppError(
+      "Invalid email or password",
+      401
+    );
   }
 
-  if (user.loginAttempts > 0 || user.lockUntil) {
-    user.loginAttempts = 0;
-    user.lockUntil = undefined;
-    await user.save();
+  /* ---------- ADMIN VALIDATION ---------- */
+
+  if (isAdmin) {
+    if (user.role !== "admin") {
+      throw new AppError(
+        "You are not an administrator.",
+        403
+      );
+    }
+
+    if (!adminSecret) {
+      throw new AppError(
+        "Admin Secret Key is required.",
+        400
+      );
+    }
+
+    if (
+      adminSecret !== process.env.ADMIN_SECRET
+    ) {
+      throw new AppError(
+        "Invalid Admin Secret Key.",
+        403
+      );
+    }
   }
 
-  // Enforce Multi-Factor Authentication step
+  /* ---------- RESET LOGIN ATTEMPTS ---------- */
+
+  user.loginAttempts = 0;
+  user.lockUntil = undefined;
+
+  /* ---------- MFA ---------- */
+
   if (user.mfaEnabled) {
     const tempToken = jwt.sign(
-      { userId: user._id.toString(), mfaTemp: true },
+      {
+        userId: user._id.toString(),
+        mfaTemp: true,
+      },
       env.JWT_SECRET,
-      { expiresIn: "5m", algorithm: "HS256" }
+      {
+        expiresIn: "5m",
+        algorithm: "HS256",
+      }
     );
+
+    await user.save();
+
     return {
       mfaRequired: true,
       tempToken,
     };
   }
 
-  const tokens = generateTokens(user._id.toString());
-  user.addRefreshToken(tokens.refreshToken);
+  const tokens = generateTokens(
+    user._id.toString()
+  );
+
+  user.addRefreshToken(
+    tokens.refreshToken
+  );
+
   user.lastLoginAt = new Date();
+
   await user.save();
 
-  return buildAuthPayload(user, tokens);
+  return buildAuthPayload(
+    user,
+    tokens
+  );
 };
 
 export const getCurrentUser = async (userId) => {
   const user = await User.findById(userId);
+
   if (!user) {
     throw new AppError("User not found", 404);
   }
@@ -175,6 +338,7 @@ export const getCurrentUser = async (userId) => {
     _id: user._id,
     name: user.name,
     email: user.email,
+    role: user.role,
     plan: user.plan,
     isVerified: user.isVerified,
     mfaEnabled: user.mfaEnabled,
@@ -183,6 +347,7 @@ export const getCurrentUser = async (userId) => {
 
 export const refreshUserTokens = async (refreshToken) => {
   const decoded = verifyRefreshToken(refreshToken);
+
   const user = await User.findById(decoded.userId).select("+refreshTokens");
 
   if (!user) {
@@ -191,13 +356,18 @@ export const refreshUserTokens = async (refreshToken) => {
 
   if (!user.refreshTokens.includes(refreshToken)) {
     user.clearRefreshTokens();
+
     await user.save();
+
     throw new AppError("Invalid refresh token", 401);
   }
 
   user.removeRefreshToken(refreshToken);
+
   const tokens = generateTokens(user._id.toString());
+
   user.addRefreshToken(tokens.refreshToken);
+
   await user.save();
 
   return tokens;
@@ -205,9 +375,12 @@ export const refreshUserTokens = async (refreshToken) => {
 
 export const logoutUser = async ({ userId, refreshToken }) => {
   if (!refreshToken) return;
+
   const user = await User.findById(userId).select("+refreshTokens");
+
   if (user) {
     user.removeRefreshToken(refreshToken);
+
     await user.save();
   }
 };

@@ -19,6 +19,8 @@ export const registerSchema = z.object({
     email,
     password,
     plan: z.enum(["free", "starter", "pro", "agency"]).optional(),
+    isAdmin: z.boolean().optional(),
+    adminSecret: z.string().optional(),
   }),
 });
 
@@ -26,16 +28,14 @@ export const loginSchema = z.object({
   body: z.object({
     email,
     password,
+    isAdmin: z.boolean().optional(),
+    adminSecret: z.string().optional(),
   }),
 });
 
-export const refreshTokenSchema = z.object({
-  // Taken from HTTP-only cookie
-});
+export const refreshTokenSchema = z.object({});
 
-export const logoutSchema = z.object({
-  // Taken from HTTP-only cookie
-});
+export const logoutSchema = z.object({});
 
 export const googleAuthSchema = z.object({
   body: z.object({
@@ -70,17 +70,18 @@ export const resendVerificationSchema = z.object({
   }),
 });
 
-export const mfaSetupSchema = z.object({
-  // Checked via auth context protect middleware
-});
+export const mfaSetupSchema = z.object({});
 
 export const mfaVerifySchema = z.object({
-  body: z.object({
-    code: z.string().length(6, "MFA code must be exactly 6 digits").optional(),
-    recoveryCode: z.string().min(1, "Recovery code is required").optional(),
-  }).refine((data) => data.code || data.recoveryCode, {
-    message: "Either MFA code or recovery code must be provided",
-  }),
+  body: z
+    .object({
+      code: z.string().length(6, "MFA code must be exactly 6 digits").optional(),
+      tempToken: z.string().min(1, "MFA session token is required").optional(),
+      recoveryCode: z.string().min(1, "Recovery code is required").optional(),
+    })
+    .refine((data) => data.code || data.recoveryCode, {
+      message: "Either MFA code or recovery code must be provided",
+    }),
 });
 
 export const validate = (schema) => (req, res, next) => {
@@ -104,5 +105,6 @@ export const validate = (schema) => (req, res, next) => {
   if (result.data.body !== undefined) req.body = result.data.body;
   if (result.data.params !== undefined) req.params = result.data.params;
   if (result.data.query !== undefined) req.query = result.data.query;
+
   return next();
 };

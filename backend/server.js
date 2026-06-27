@@ -18,6 +18,7 @@ import instagramRoutes from "./routes/instagram.routes.js";
 import overviewRoutes from "./routes/overview.routes.js";
 import analyticsRoutes from "./routes/analytics.routes.js";
 import billingRoutes from "./routes/billing.routes.js";
+import adminRoutes from "./routes/admin.routes.js";
 import { handleRazorpayWebhook } from "./controllers/billing.controller.js";
 
 import { errorHandler } from "./utils/errorHandler.js";
@@ -182,6 +183,7 @@ app.use("/api/v1/instagram", instagramRoutes);
 app.use("/api/v1/overview", overviewRoutes);
 app.use("/api/v1/analytics", analyticsRoutes);
 app.use("/api/v1/billing", billingRoutes);
+app.use("/api/v1/admin", adminRoutes);
 
 // Swagger Documentation Route
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));

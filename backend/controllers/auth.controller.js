@@ -13,36 +13,45 @@ import {
   verifyUserMFASetup,
   verifyUserMFALogin,
 } from "../services/auth.service.js";
+
 import { sendSuccess } from "../utils/apiResponse.js";
 import User from "../models/User.js";
 
+const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "strict",
+};
+
+const accessTokenCookieOptions = {
+  ...cookieOptions,
+  maxAge: 60 * 60 * 1000,
+};
+
+const refreshTokenCookieOptions = {
+  ...cookieOptions,
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+
+const setAuthCookies = (res, data) => {
+  res.cookie("accessToken", data.accessToken, accessTokenCookieOptions);
+  res.cookie("refreshToken", data.refreshToken, refreshTokenCookieOptions);
+};
+
+/* ==========================================================
+   REGISTER
+========================================================== */
+
 export const register = async (req, res, next) => {
   try {
-    console.log('[auth.register] incoming body:', req.body);
     const data = await registerUser(req.body);
-    
-    // Set HTTP-Only Cookie for Access Token
-    res.cookie("accessToken", data.accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 60 * 60 * 1000, // 1 hour
-    });
 
-    // Set HTTP-Only Cookie for Refresh Token
-    res.cookie("refreshToken", data.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
-
-    // Remove refreshToken from response body
+    setAuthCookies(res, data);
     delete data.refreshToken;
 
     sendSuccess(res, {
       statusCode: 201,
-      message: "User registered successfully",
+      message: "Registration successful",
       data,
     });
   } catch (err) {
@@ -50,9 +59,20 @@ export const register = async (req, res, next) => {
   }
 };
 
+/* ==========================================================
+   LOGIN
+========================================================== */
+
 export const login = async (req, res, next) => {
   try {
-    const data = await loginUser(req.body);
+    const { email, password, isAdmin = false, adminSecret } = req.body;
+
+    const data = await loginUser({
+      email,
+      password,
+      isAdmin,
+      adminSecret,
+    });
 
     if (data.mfaRequired) {
       return sendSuccess(res, {
@@ -64,23 +84,7 @@ export const login = async (req, res, next) => {
       });
     }
 
-    // Set HTTP-Only Cookie for Access Token
-    res.cookie("accessToken", data.accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 60 * 60 * 1000, // 1 hour
-    });
-
-    // Set HTTP-Only Cookie for Refresh Token
-    res.cookie("refreshToken", data.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
-
-    // Remove refreshToken from response body
+    setAuthCookies(res, data);
     delete data.refreshToken;
 
     sendSuccess(res, {
@@ -92,28 +96,19 @@ export const login = async (req, res, next) => {
   }
 };
 
+/* ==========================================================
+   GOOGLE LOGIN
+========================================================== */
+
 export const googleAuth = async (req, res, next) => {
   try {
-    console.log('[auth.google] incoming body:', req.body);
-    const data = await googleAuthUser(req.body.credential, req.body.mode, req.body.plan);
+    const data = await googleAuthUser(
+      req.body.credential,
+      req.body.mode,
+      req.body.plan,
+    );
 
-    // Set HTTP-Only Cookie for Access Token
-    res.cookie("accessToken", data.accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 60 * 60 * 1000, // 1 hour
-    });
-
-    // Set HTTP-Only Cookie for Refresh Token
-    res.cookie("refreshToken", data.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
-
-    // Remove refreshToken from response body
+    setAuthCookies(res, data);
     delete data.refreshToken;
 
     sendSuccess(res, {
@@ -125,9 +120,14 @@ export const googleAuth = async (req, res, next) => {
   }
 };
 
+/* ==========================================================
+   CURRENT USER
+========================================================== */
+
 export const getMe = async (req, res, next) => {
   try {
     const user = await getCurrentUser(req.userId);
+
     sendSuccess(res, {
       data: { user },
     });
@@ -136,32 +136,24 @@ export const getMe = async (req, res, next) => {
   }
 };
 
+/* ==========================================================
+   REFRESH TOKEN
+========================================================== */
+
 export const refresh = async (req, res, next) => {
   try {
     const refreshToken = req.cookies?.refreshToken;
+
     if (!refreshToken) {
-      return res.status(401).json({ success: false, message: "Refresh token missing" });
+      return res.status(401).json({
+        success: false,
+        message: "Refresh token missing",
+      });
     }
 
     const tokens = await refreshUserTokens(refreshToken);
 
-    // Set HTTP-Only Cookie for Access Token
-    res.cookie("accessToken", tokens.accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 60 * 60 * 1000, // 1 hour
-    });
-
-    // Set new HTTP-Only Cookie for Refresh Token
-    res.cookie("refreshToken", tokens.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
-
-    // Remove refreshToken from response body
+    setAuthCookies(res, tokens);
     delete tokens.refreshToken;
 
     sendSuccess(res, {
@@ -173,23 +165,18 @@ export const refresh = async (req, res, next) => {
   }
 };
 
+/* ==========================================================
+   LOGOUT
+========================================================== */
+
 export const logout = async (req, res, next) => {
   try {
     const refreshToken = req.cookies?.refreshToken;
-    await logoutUser({ userId: req.userId, refreshToken });
-    
-    // Clear cookies
-    res.clearCookie("accessToken", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-    });
 
-    res.clearCookie("refreshToken", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-    });
+    await logoutUser({ userId: req.userId, refreshToken });
+
+    res.clearCookie("accessToken", cookieOptions);
+    res.clearCookie("refreshToken", cookieOptions);
 
     sendSuccess(res, {
       message: "Logout successful",
@@ -290,22 +277,7 @@ export const verifyMFALoginController = async (req, res, next) => {
     const { code, recoveryCode } = req.body;
     const data = await verifyUserMFALogin(tempToken, code, recoveryCode);
 
-    // Set HTTP-Only Cookie for Access Token
-    res.cookie("accessToken", data.accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 60 * 60 * 1000, // 1 hour
-    });
-
-    // Set HTTP-Only Cookie for Refresh Token
-    res.cookie("refreshToken", data.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
-
+    setAuthCookies(res, data);
     delete data.refreshToken;
 
     sendSuccess(res, {
@@ -320,10 +292,10 @@ export const verifyMFALoginController = async (req, res, next) => {
 export default {
   register,
   login,
+  googleAuth,
   getMe,
   refresh,
   logout,
-  googleAuth,
   forgotPassword,
   resetPassword,
   verifyEmail,
