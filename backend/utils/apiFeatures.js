@@ -1,3 +1,7 @@
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 class APIFeatures {
   constructor(query, queryString) {
     this.query = query;
@@ -19,7 +23,8 @@ class APIFeatures {
 
   search(searchFields) {
     if (this.queryString.search && searchFields && searchFields.length > 0) {
-      const searchRegex = new RegExp(this.queryString.search, 'i');
+      const escapedSearch = escapeRegExp(this.queryString.search);
+      const searchRegex = new RegExp(escapedSearch, 'i');
       const searchConditions = searchFields.map(field => ({ [field]: searchRegex }));
       
       // Use $or to search across multiple fields

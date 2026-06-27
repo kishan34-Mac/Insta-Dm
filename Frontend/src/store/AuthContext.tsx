@@ -12,62 +12,56 @@ import {
   type AuthPayload,
   type AuthUser,
 } from "@/api/auth";
+import http from "@/api/http";
 
-const STORAGE_KEY = "athenura.auth";
+type MfaLoginResponse = {
+  mfaRequired: true;
+  tempToken: string;
+};
+
+type LoginResponse = AuthPayload | MfaLoginResponse;
 
 type AuthState = {
   user: AuthUser | null;
-
   accessToken: string | null;
-
-  refreshToken: string | null;
-
+  loading: boolean;
   login: (input: {
     email: string;
     password: string;
-
     isAdmin?: boolean;
     adminSecret?: string;
-  }) => Promise<void>;
-
+  }) => Promise<LoginResponse>;
   register: (input: {
     name: string;
     email: string;
     password: string;
     plan?: string;
-
     isAdmin?: boolean;
     adminSecret?: string;
-  }) => Promise<void>;
-
+  }) => Promise<AuthPayload>;
   loginWithGoogle: (
     credential: string,
     mode: "login" | "signup",
-    plan?: string
-  ) => Promise<void>;
-
+    plan?: string,
+  ) => Promise<AuthPayload>;
   logout: () => Promise<void>;
+  verifyMfa: (input: {
+    code?: string;
+    tempToken: string;
+    recoveryCode?: string;
+  }) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthState | null>(null);
 
-const readStoredAuth = (): AuthPayload | null => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-
-    if (!raw) return null;
-
-    const payload = JSON.parse(raw);
-
-    if (!payload?.user || !payload?.accessToken) {
-      localStorage.removeItem(STORAGE_KEY);
-      return null;
-    }
-
-    return payload;
-  } catch {
-    localStorage.removeItem(STORAGE_KEY);
-    return null;
+const syncStoredUser = (user: AuthUser | null) => {
+  if (user) {
+    localStorage.setItem("user", JSON.stringify(user));
+  } else {
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
   }
 };
 
@@ -76,100 +70,73 @@ export function AuthProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [auth, setAuth] = useState<AuthPayload | null>(() =>
-    readStoredAuth()
-  );
+  const [auth, setAuth] = useState<AuthPayload | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const persistAuth = useCallback(
-    (payload: AuthPayload | null) => {
-      setAuth(payload);
-
-      if (payload) {
-        localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify(payload)
-        );
-
-        localStorage.setItem(
-          "token",
-          payload.accessToken
-        );
-
-        localStorage.setItem(
-          "accessToken",
-          payload.accessToken
-        );
-
-        if (payload.refreshToken) {
-          localStorage.setItem(
-            "refreshToken",
-            payload.refreshToken
-          );
-        }
-
-        localStorage.setItem(
-          "user",
-          JSON.stringify(payload.user)
-        );
-      } else {
-        localStorage.removeItem(STORAGE_KEY);
-
-        localStorage.removeItem("token");
-
-        localStorage.removeItem("accessToken");
-
-        localStorage.removeItem("refreshToken");
-
-        localStorage.removeItem("user");
-      }
-    },
-    []
-  );
-
-  useEffect(() => {
-    const handleAuthRefresh = (
-      event: Event
-    ) => {
-      const customEvent =
-        event as CustomEvent<AuthPayload>;
-
-      setAuth(customEvent.detail);
-    };
-
-    window.addEventListener(
-      "athenura:auth-refresh",
-      handleAuthRefresh
-    );
-
-    return () =>
-      window.removeEventListener(
-        "athenura:auth-refresh",
-        handleAuthRefresh
-      );
+  const applyAuthPayload = useCallback((payload: AuthPayload | null) => {
+    setAuth(payload);
+    syncStoredUser(payload?.user ?? null);
   }, []);
 
-  /* ==========================================================
-      LOGIN
-  ========================================================== */
+  useEffect(() => {
+    const bootstrapSession = async () => {
+      try {
+        const refreshResponse = await http.post("/auth/refresh");
+        const tokens = refreshResponse.data.data;
+
+        if (!tokens?.accessToken) {
+          setAuth(null);
+          syncStoredUser(null);
+          return;
+        }
+
+        const meResponse = await authApi.me();
+        const user = meResponse.data.user;
+
+        applyAuthPayload({
+          user,
+          accessToken: tokens.accessToken,
+        });
+      } catch {
+        setAuth(null);
+        syncStoredUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    bootstrapSession();
+  }, [applyAuthPayload]);
+
+  useEffect(() => {
+    const handleAuthLogout = () => {
+      applyAuthPayload(null);
+    };
+
+    window.addEventListener("athenura:auth-logout", handleAuthLogout);
+
+    return () =>
+      window.removeEventListener("athenura:auth-logout", handleAuthLogout);
+  }, [applyAuthPayload]);
 
   const login = useCallback(
     async (input: {
       email: string;
       password: string;
-
       isAdmin?: boolean;
       adminSecret?: string;
     }) => {
       const response = await authApi.login(input);
 
-      persistAuth(response);
-    },
-    [persistAuth]
-  );
+      if ("mfaRequired" in response && response.mfaRequired) {
+        return response;
+      }
 
-  /* ==========================================================
-      REGISTER
-  ========================================================== */
+      applyAuthPayload(response);
+      return response;
+    },
+    [applyAuthPayload],
+  );
 
   const register = useCallback(
     async (input: {
@@ -177,86 +144,72 @@ export function AuthProvider({
       email: string;
       password: string;
       plan?: string;
-
       isAdmin?: boolean;
       adminSecret?: string;
     }) => {
       const response = await authApi.register(input);
-
-      persistAuth(response);
+      applyAuthPayload(response);
+      return response;
     },
-    [persistAuth]
+    [applyAuthPayload],
   );
-
-  /* ==========================================================
-      GOOGLE LOGIN
-  ========================================================== */
 
   const loginWithGoogle = useCallback(
     async (
       credential: string,
       mode: "login" | "signup",
-      plan?: string
+      plan?: string,
     ) => {
-      const response = await authApi.googleAuth(
-        credential,
-        mode,
-        plan
-      );
-
-      persistAuth(response);
+      const response = await authApi.googleAuth(credential, mode, plan);
+      applyAuthPayload(response);
+      return response;
     },
-    [persistAuth]
+    [applyAuthPayload],
   );
 
-  /* ==========================================================
-      LOGOUT
-  ========================================================== */
+  const verifyMfa = useCallback(
+    async (input: {
+      code?: string;
+      tempToken: string;
+      recoveryCode?: string;
+    }) => {
+      const response = await http.post("/auth/mfa/login", input);
+      const payload = response.data.data;
+
+      if (payload?.user && payload?.accessToken) {
+        applyAuthPayload(payload);
+      }
+    },
+    [applyAuthPayload],
+  );
 
   const logout = useCallback(async () => {
     try {
-      if (auth?.accessToken) {
-        await authApi.logout(
-          auth.refreshToken ?? undefined
-        );
-      }
+      await authApi.logout();
     } catch (error) {
       console.error(error);
+    } finally {
+      applyAuthPayload(null);
     }
-
-    persistAuth(null);
-  }, [auth, persistAuth]);
+  }, [applyAuthPayload]);
 
   const value = useMemo<AuthState>(
     () => ({
       user: auth?.user ?? null,
-
-      accessToken:
-        auth?.accessToken ?? null,
-
-      refreshToken:
-        auth?.refreshToken ?? null,
-
+      accessToken: auth?.accessToken ?? null,
+      loading,
       login,
-
       register,
-
       loginWithGoogle,
-
       logout,
+      verifyMfa,
     }),
-    [
-      auth,
-      login,
-      register,
-      loginWithGoogle,
-      logout,
-    ]
+    [auth, loading, login, register, loginWithGoogle, logout, verifyMfa],
   );
 
   return (
     <AuthContext.Provider value={value}>
-      {children}
+      {!loading ? children : <div className="min-h-screen bg-background" />}
     </AuthContext.Provider>
   );
 }
@@ -265,9 +218,7 @@ export const useAuth = () => {
   const context = useContext(AuthContext);
 
   if (!context) {
-    throw new Error(
-      "useAuth must be used within AuthProvider"
-    );
+    throw new Error("useAuth must be used within AuthProvider");
   }
 
   return context;

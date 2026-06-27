@@ -6,19 +6,18 @@ import { API_BASE_URL } from "@/api/http";
 
 import ConnectInstagramModal from "./ConnectInstagramModal";
 
+import { useAuth } from "@/store/AuthContext";
+
 const ConnectInstagramButton = () => {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const { accessToken } = useAuth();
 
   const handleConnect = async (): Promise<void> => {
     try {
       setLoading(true);
 
-      const auth = JSON.parse(
-        localStorage.getItem("athenura.auth") || "{}"
-      );
-
-      const token = auth?.accessToken;
+      const token = accessToken;
 
       if (!token) {
         alert("Login required");

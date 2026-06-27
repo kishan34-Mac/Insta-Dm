@@ -28,14 +28,21 @@ import { swaggerSpec } from './config/swagger.js';
 
 const app = express();
 
+app.disable("x-powered-by");
 app.set("trust proxy", 1);
+
+const parsedCorsOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim()).filter(Boolean)
+  : [];
 
 const allowedOrigins = [
   "http://localhost:8080",
   "http://127.0.0.1:8080",
   "http://localhost:5173",
   "http://127.0.0.1:5173",
-];
+  env.FRONTEND_URL,
+  ...parsedCorsOrigins,
+].filter(Boolean);
 
 // Security Headers (Helmet with CSP)
 app.use(
@@ -84,12 +91,13 @@ app.use(
 
       if (
         allowedOrigins.includes(origin) ||
-        origin.includes("ngrok")
+        origin.includes("ngrok") ||
+        (process.env.NODE_ENV !== "production" && origin.includes("localhost"))
       ) {
         return callback(null, true);
       }
 
-      return callback(null, true);
+      return callback(new Error("Not allowed by CORS"));
     },
 
     credentials: true,
@@ -106,11 +114,19 @@ app.use(
     allowedHeaders: [
       "Content-Type",
       "Authorization",
+      "Cookie",
     ],
   })
 );
 
 app.options(/.*/, cors());
+
+// Razorpay webhook raw body handler (must run BEFORE express.json())
+app.post(
+  "/api/v1/billing/razorpay/webhook",
+  express.raw({ type: "application/json" }),
+  (req, res) => handleRazorpayWebhook(req, res)
+);
 
 app.use(
   express.json({
@@ -169,17 +185,6 @@ app.use("/api/v1/analytics", analyticsRoutes);
 app.use("/api/v1/billing", billingRoutes);
 app.use("/api/v1/admin", adminRoutes);
 
-
-// Razorpay webhook raw body handler (must be before json parser consumption)
-// Because express.json() is registered above, we mount a raw handler that
-// directly delegates to the billing webhook controller.
-
-app.post(
-  "/api/v1/billing/razorpay/webhook",
-  express.raw({ type: "application/json" }),
-  (req, res) => handleRazorpayWebhook(req, res)
-);
-
 // Swagger Documentation Route
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
@@ -218,10 +223,15 @@ const startServer = async () => {
     const io = new Server(server, {
       cors: {
         origin: (origin, callback) => {
-          if (!origin || allowedOrigins.includes(origin) || origin.includes("ngrok")) {
+          if (
+            !origin ||
+            allowedOrigins.includes(origin) ||
+            origin.includes("ngrok") ||
+            (process.env.NODE_ENV !== "production" && origin.includes("localhost"))
+          ) {
             return callback(null, true);
           }
-          return callback(null, true);
+          return callback(new Error("Not allowed by CORS"));
         },
         credentials: true,
         methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],

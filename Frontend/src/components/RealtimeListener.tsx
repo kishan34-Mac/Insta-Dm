@@ -62,7 +62,8 @@ export function RealtimeListener() {
           leadApi.getAll(),
           overviewApi.get(),
         ]);
-        setLeads(leadsRes.data || []);
+        const leadsData = leadsRes.data?.results || (Array.isArray(leadsRes.data) ? leadsRes.data : []);
+        setLeads(leadsData);
         if (overviewRes.success) setOverview(overviewRes.data);
       } catch (err) {
         console.error("Failed to sync CRM leads or overview stats:", err);
@@ -80,7 +81,8 @@ export function RealtimeListener() {
           leadApi.getAll(),
           overviewApi.get(),
         ]);
-        setLeads(leadsRes.data || []);
+        const leadsData = leadsRes.data?.results || (Array.isArray(leadsRes.data) ? leadsRes.data : []);
+        setLeads(leadsData);
         if (overviewRes.success) setOverview(overviewRes.data);
       } catch (err) {
         console.error("Failed to sync CRM leads:", err);

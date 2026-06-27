@@ -13,40 +13,6 @@ const http = axios.create({
   withCredentials: true,
 });
 
-const getStoredAuth = () => {
-  try {
-    const rawAuth =
-      localStorage.getItem("athenura.auth");
-
-    if (!rawAuth) return null;
-
-    return JSON.parse(rawAuth);
-  } catch (error) {
-    console.error(
-      "Failed to parse auth data",
-      error
-    );
-
-    return null;
-  }
-};
-
-http.interceptors.request.use(
-  (config) => {
-    const auth = getStoredAuth();
-
-    const token = auth?.accessToken;
-
-    if (token) {
-      config.headers.Authorization =
-        `Bearer ${token}`;
-    }
-
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
 http.interceptors.response.use(
   (response) => response,
 
@@ -78,51 +44,14 @@ http.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const auth = getStoredAuth();
-
-        if (!auth?.refreshToken) {
-          throw new Error(
-            "No refresh token found"
-          );
-        }
-
-        const refreshResponse =
-          await axios.post(
-            `${API_BASE_URL}/auth/refresh`,
-            {
-              refreshToken:
-                auth.refreshToken,
-            }
-          );
-
-        const refreshData =
-          refreshResponse.data.data;
-
-        const updatedAuth = {
-          ...auth,
-          accessToken:
-            refreshData.accessToken,
-          refreshToken:
-            refreshData.refreshToken ||
-            auth.refreshToken,
-        };
-
-        localStorage.setItem(
-          "athenura.auth",
-          JSON.stringify(updatedAuth)
+        // Silent token refresh: cookies are automatically sent and received by the browser
+        await axios.post(
+          `${API_BASE_URL}/auth/refresh`,
+          {},
+          {
+            withCredentials: true,
+          }
         );
-
-        window.dispatchEvent(
-          new CustomEvent(
-            "athenura:auth-refresh",
-            {
-              detail: updatedAuth,
-            }
-          )
-        );
-
-        originalRequest.headers.Authorization =
-          `Bearer ${updatedAuth.accessToken}`;
 
         return http(originalRequest);
       } catch (refreshError) {
@@ -131,8 +60,10 @@ http.interceptors.response.use(
           refreshError
         );
 
-        localStorage.removeItem(
-          "athenura.auth"
+        localStorage.removeItem("user");
+
+        window.dispatchEvent(
+          new CustomEvent("athenura:auth-logout")
         );
 
         window.location.href =

@@ -28,8 +28,8 @@ export function HowItWorks() {
       <div className="container">
         <div className="text-center max-w-2xl mx-auto mb-16">
           <p className="text-xs font-semibold tracking-widest uppercase text-primary mb-3">How it works</p>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-balance">
-            Three steps to <span className="gradient-text">automated revenue</span>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-medium tracking-[-0.025em] text-balance">
+            Three steps to <span className="text-primary font-medium">automated revenue</span>
           </h2>
           <p className="mt-4 text-muted-foreground text-lg">
             Set up in under 5 minutes. No engineers needed.
@@ -38,7 +38,7 @@ export function HowItWorks() {
 
         <div className="relative grid md:grid-cols-3 gap-6">
           {/* connecting line */}
-          <div className="hidden md:block absolute top-12 left-[16%] right-[16%] h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+          <div className="hidden md:block absolute top-8 left-[20%] right-[20%] h-px bg-border" />
 
           {steps.map((s, i) => (
             <motion.div
@@ -49,10 +49,10 @@ export function HowItWorks() {
               transition={{ duration: 0.5, delay: i * 0.15 }}
               className="relative"
             >
-              <div className="glass-card p-6 h-full hover:-translate-y-1 transition-transform duration-300">
+              <div className="border border-border bg-card p-6 rounded-lg h-full shadow-sm hover:shadow-md transition-shadow duration-200">
                 <div className="flex items-center justify-between mb-5">
-                  <div className={`h-12 w-12 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center shadow-glow`}>
-                    <s.icon className="h-5 w-5 text-white" />
+                  <div className="h-12 w-12 rounded-sm bg-secondary border border-border flex items-center justify-center text-primary">
+                    <s.icon className="h-5 w-5" />
                   </div>
                   <span className="font-display text-3xl font-bold text-muted-foreground/30">0{i + 1}</span>
                 </div>

@@ -20,7 +20,17 @@ export interface Lead {
   updatedAt: string;
 }
 
-export const getLeads = async (): Promise<{ success: boolean; count: number; data: Lead[] }> => {
+export interface LeadResponse {
+  success: boolean;
+  data: {
+    results: Lead[];
+    total: number;
+    page: number;
+    limit: number;
+  };
+}
+
+export const getLeads = async (): Promise<LeadResponse> => {
   const response = await http.get("/leads");
   return response.data;
 };

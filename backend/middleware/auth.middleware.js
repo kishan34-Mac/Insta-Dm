@@ -2,19 +2,23 @@ import { verifyAccessToken } from "../utils/jwt.js";
 import { AppError } from "../utils/errorHandler.js";
 
 export const protect = (req, res, next) => {
-  let authHeader = req.headers.authorization;
+  let token = req.cookies?.accessToken;
+  const authHeader = req.headers.authorization;
 
-  // check query string for token on OAuth redirects
-  if (!authHeader && req.query.token) {
-    authHeader = `Bearer ${req.query.token}`;
+  if (!token && authHeader?.startsWith("Bearer ")) {
+    token = authHeader.split(" ")[1];
   }
 
-  if (!authHeader?.startsWith("Bearer ")) {
+  // check query string for token on OAuth redirects
+  if (!token && req.query.token) {
+    token = req.query.token;
+  }
+
+  if (!token) {
     return next(new AppError("Not authorized to access this route", 401));
   }
 
   try {
-    const token = authHeader.split(" ")[1];
     const decoded = verifyAccessToken(token);
 
     req.userId = decoded.userId;

@@ -2,6 +2,18 @@ import Razorpay from "razorpay";
 import crypto from "crypto";
 
 import env from "../config/env.js";
+
+const timingSafeCompare = (a, b) => {
+  if (typeof a !== "string" || typeof b !== "string") {
+    return false;
+  }
+  const aBuf = Buffer.from(a, "utf8");
+  const bBuf = Buffer.from(b, "utf8");
+  if (aBuf.length !== bBuf.length) {
+    return false;
+  }
+  return crypto.timingSafeEqual(aBuf, bBuf);
+};
 import { AppError } from "../utils/errorHandler.js";
 import User from "../models/User.js";
 import Payment from "../models/Payment.js";
@@ -173,7 +185,7 @@ export const verifyRazorpayPayment = async (req, res, next) => {
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
       .digest("hex");
 
-    if (expected !== razorpay_signature) {
+    if (!timingSafeCompare(expected, razorpay_signature)) {
       throw new AppError("Payment verification failed: invalid signature", 400);
     }
 
@@ -249,7 +261,7 @@ export const handleRazorpayWebhook = async (req, res, next) => {
       .update(payloadString)
       .digest("hex");
 
-    if (expected !== signature) {
+    if (!timingSafeCompare(expected, signature)) {
       throw new AppError("Invalid Razorpay webhook signature", 400);
     }
 

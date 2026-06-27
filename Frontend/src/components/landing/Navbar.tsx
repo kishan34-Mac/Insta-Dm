@@ -100,19 +100,12 @@ export function Navbar() {
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
       className={cn(
-        "fixed top-0 inset-x-0 z-50 transition-all duration-300",
-        scrolled ? "py-2 sm:py-3" : "py-3 sm:py-5",
+        "fixed top-0 inset-x-0 z-50 transition-all duration-200 border-b bg-background/95 backdrop-blur-md",
+        scrolled ? "py-2 border-border shadow-sm" : "py-3 border-transparent",
       )}
     >
-      <div className="container px-3 sm:px-6">
-        <div
-          className={cn(
-            "flex items-center justify-between rounded-2xl px-3 sm:px-4 lg:px-6 py-2.5 sm:py-3 transition-all duration-300 glass border",
-            scrolled
-              ? "shadow-soft border-glass-border"
-              : "border-transparent bg-background/40 backdrop-blur-md",
-          )}
-        >
+      <div className="container px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between py-2">
           <Link
             to="/"
             className="flex min-w-0 items-center group shrink-0"
@@ -130,7 +123,7 @@ export function Navbar() {
                   key={l.href}
                   href={l.href}
                   className={cn(
-                    "relative px-4 py-2 text-sm font-medium rounded-full transition-colors",
+                    "relative px-4 py-1.5 text-sm font-medium rounded-sm transition-colors",
                     isActive
                       ? "text-foreground"
                       : "text-muted-foreground hover:text-foreground",
@@ -139,7 +132,7 @@ export function Navbar() {
                   {isActive && (
                     <motion.span
                       layoutId="nav-pill"
-                      className="absolute inset-0 rounded-full bg-secondary border border-border"
+                      className="absolute inset-0 rounded-sm bg-secondary border border-border"
                       transition={{
                         type: "spring",
                         stiffness: 380,
@@ -205,7 +198,7 @@ export function Navbar() {
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="lg:hidden mt-2 glass rounded-2xl p-4 flex flex-col gap-1 shadow-elegant"
+            className="lg:hidden mt-2 border bg-card rounded-lg p-4 flex flex-col gap-1 shadow-md"
           >
             {links.map((l) => (
               <a

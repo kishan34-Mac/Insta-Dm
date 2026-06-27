@@ -13,12 +13,11 @@ const features = [
 export function Features() {
   return (
     <section id="features" className="py-16 sm:py-24 lg:py-28 relative">
-      <div className="absolute inset-0 mesh-bg opacity-50 pointer-events-none" />
       <div className="container relative">
         <div className="text-center max-w-2xl mx-auto mb-16">
           <p className="text-xs font-semibold tracking-widest uppercase text-primary mb-3">Features</p>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-balance">
-            Everything you need to <span className="gradient-text">scale your DMs</span>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-medium tracking-[-0.025em] text-balance">
+            Everything you need to <span className="text-primary font-medium">scale your DMs</span>
           </h2>
         </div>
 
@@ -30,10 +29,10 @@ export function Features() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: (i % 3) * 0.1 }}
-              className="group glass-card p-6 hover:border-primary/40 hover:-translate-y-1 transition-all duration-300"
+              className="group border border-border bg-card p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
             >
-              <div className="h-11 w-11 rounded-xl bg-gradient-primary/10 border border-primary/20 flex items-center justify-center mb-4 group-hover:shadow-glow transition-shadow">
-                <f.icon className="h-5 w-5 text-primary" />
+              <div className="h-10 w-10 rounded-sm bg-secondary border border-border flex items-center justify-center mb-4 text-primary">
+                <f.icon className="h-5 w-5" />
               </div>
               <h3 className="font-semibold text-lg mb-1.5">{f.title}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>

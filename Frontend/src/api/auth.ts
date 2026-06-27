@@ -11,7 +11,12 @@ export type AuthUser = {
 export type AuthPayload = {
   user: AuthUser;
   accessToken: string;
-  refreshToken: string;
+  refreshToken?: string;
+};
+
+export type MfaLoginPayload = {
+  mfaRequired: true;
+  tempToken: string;
 };
 
 export type ApiResponse<T> = {
@@ -69,7 +74,7 @@ export const authApi = {
     adminSecret?: string;
   }) => {
     try {
-      const response = await http.post<ApiResponse<AuthPayload>>(
+      const response = await http.post<ApiResponse<AuthPayload | MfaLoginPayload>>(
         "/auth/login",
         input,
       );

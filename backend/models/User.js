@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import mongoose from "mongoose";
+import { encrypt, decrypt } from "../utils/encryption.js";
 
 const InstagramAccountSchema = new mongoose.Schema(
   {
@@ -29,12 +30,16 @@ const InstagramAccountSchema = new mongoose.Schema(
       type: String,
       required: true,
       select: false,
+      set: encrypt,
+      get: decrypt,
     },
 
     pageAccessToken: {
       type: String,
       default: null,
       select: false,
+      set: encrypt,
+      get: decrypt,
     },
 
     tokenType: {
@@ -72,7 +77,11 @@ const InstagramAccountSchema = new mongoose.Schema(
       default: null,
     },
   },
-  { _id: false }
+  { 
+    _id: false,
+    toJSON: { getters: true },
+    toObject: { getters: true },
+  }
 );
 
 const UserSchema = new mongoose.Schema(
@@ -183,6 +192,52 @@ const UserSchema = new mongoose.Schema(
 
     lockUntil: {
       type: Number,
+      select: false,
+    },
+
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    verificationToken: {
+      type: String,
+      default: null,
+      select: false,
+    },
+
+    verificationExpires: {
+      type: Date,
+      default: null,
+      select: false,
+    },
+
+    resetPasswordToken: {
+      type: String,
+      default: null,
+      select: false,
+    },
+
+    resetPasswordExpires: {
+      type: Date,
+      default: null,
+      select: false,
+    },
+
+    mfaEnabled: {
+      type: Boolean,
+      default: false,
+    },
+
+    mfaSecret: {
+      type: String,
+      default: null,
+      select: false,
+    },
+
+    mfaRecoveryCodes: {
+      type: [String],
+      default: [],
       select: false,
     },
   },

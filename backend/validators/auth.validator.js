@@ -4,25 +4,22 @@ import { AppError } from "../utils/errorHandler.js";
 const email = z
   .string()
   .trim()
-  .email()
+  .email("Provide a valid email address")
   .max(255)
   .transform((value) => value.toLowerCase());
 
-const password = z.string().min(8).max(100);
+const password = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .max(100, "Password is too long");
 
 export const registerSchema = z.object({
   body: z.object({
-    name: z.string().trim().min(2).max(80),
-
+    name: z.string().trim().min(2, "Name must be at least 2 characters").max(80),
     email,
-
     password,
-
     plan: z.enum(["free", "starter", "pro", "agency"]).optional(),
-
-    // NEW
     isAdmin: z.boolean().optional(),
-
     adminSecret: z.string().optional(),
   }),
 });
@@ -30,12 +27,8 @@ export const registerSchema = z.object({
 export const loginSchema = z.object({
   body: z.object({
     email,
-
     password,
-
-    // NEW
     isAdmin: z.boolean().optional(),
-
     adminSecret: z.string().optional(),
   }),
 });
@@ -47,11 +40,48 @@ export const logoutSchema = z.object({});
 export const googleAuthSchema = z.object({
   body: z.object({
     credential: z.string().min(1, "Google credential is required"),
-
     mode: z.enum(["login", "signup"]),
-
     plan: z.enum(["free", "starter", "pro", "agency"]).optional(),
   }),
+});
+
+export const forgotPasswordSchema = z.object({
+  body: z.object({
+    email,
+  }),
+});
+
+export const resetPasswordSchema = z.object({
+  body: z.object({
+    token: z.string().min(1, "Reset token is required"),
+    password,
+  }),
+});
+
+export const verifyEmailSchema = z.object({
+  query: z.object({
+    token: z.string().min(1, "Verification token is required"),
+  }),
+});
+
+export const resendVerificationSchema = z.object({
+  body: z.object({
+    email,
+  }),
+});
+
+export const mfaSetupSchema = z.object({});
+
+export const mfaVerifySchema = z.object({
+  body: z
+    .object({
+      code: z.string().length(6, "MFA code must be exactly 6 digits").optional(),
+      tempToken: z.string().min(1, "MFA session token is required").optional(),
+      recoveryCode: z.string().min(1, "Recovery code is required").optional(),
+    })
+    .refine((data) => data.code || data.recoveryCode, {
+      message: "Either MFA code or recovery code must be provided",
+    }),
 });
 
 export const validate = (schema) => (req, res, next) => {
@@ -72,7 +102,9 @@ export const validate = (schema) => (req, res, next) => {
     );
   }
 
-  req.body = result.data.body ?? req.body;
+  if (result.data.body !== undefined) req.body = result.data.body;
+  if (result.data.params !== undefined) req.params = result.data.params;
+  if (result.data.query !== undefined) req.query = result.data.query;
 
-  next();
+  return next();
 };

@@ -1,21 +1,30 @@
 import xss from 'xss';
 
 /**
- * Clean for xss.
- * @param {string/object} data - The value to sanitize
- * @return {string/object} The sanitized value
+ * Deep recursive clean for XSS strings, preserving structures like objects/arrays.
+ * @param {any} data - The value to sanitize recursively
+ * @return {any} The sanitized value
  */
-export const clean = (data = '') => {
-  let isObject = false;
-  if (typeof data === 'object') {
-    data = JSON.stringify(data);
-    isObject = true;
+export const clean = (data) => {
+  if (data === null || data === undefined) {
+    return data;
   }
 
-  data = xss(data);
+  if (typeof data === 'string') {
+    return xss(data);
+  }
 
-  if (isObject) {
-    data = JSON.parse(data);
+  if (Array.isArray(data)) {
+    return data.map((item) => clean(item));
+  }
+
+  if (typeof data === 'object') {
+    const cleanObj = {};
+    for (const key of Object.keys(data)) {
+      const cleanKey = xss(key);
+      cleanObj[cleanKey] = clean(data[key]);
+    }
+    return cleanObj;
   }
 
   return data;
