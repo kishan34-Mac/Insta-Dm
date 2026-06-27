@@ -101,6 +101,12 @@ const UserSchema = new mongoose.Schema(
       minlength: 2,
       maxlength: 80,
     },
+    role: {
+      type: String,
+      enum: ["user", "admin"],
+      default: "user",
+      index: true,
+    },
 
     plan: {
       type: String,
@@ -124,7 +130,6 @@ const UserSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
-
 
     instagramAccounts: {
       type: [InstagramAccountSchema],
@@ -183,7 +188,7 @@ const UserSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
  

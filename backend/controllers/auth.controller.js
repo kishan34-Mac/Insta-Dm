@@ -6,27 +6,29 @@ import {
   registerUser,
   googleAuthUser,
 } from "../services/auth.service.js";
+
 import { sendSuccess } from "../utils/apiResponse.js";
+
+/* ==========================================================
+   REGISTER
+========================================================== */
 
 export const register = async (req, res, next) => {
   try {
-    console.log('[auth.register] incoming body:', req.body);
     const data = await registerUser(req.body);
-    
-    // Set HTTP-Only Cookie for Refresh Token
+
     res.cookie("refreshToken", data.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    // Remove refreshToken from response body
     delete data.refreshToken;
 
     sendSuccess(res, {
       statusCode: 201,
-      message: "User registered successfully",
+      message: "Registration successful",
       data,
     });
   } catch (err) {
@@ -34,19 +36,28 @@ export const register = async (req, res, next) => {
   }
 };
 
+/* ==========================================================
+   LOGIN
+========================================================== */
+
 export const login = async (req, res, next) => {
   try {
-    const data = await loginUser(req.body);
+    const { email, password, isAdmin = false, adminSecret } = req.body;
 
-    // Set HTTP-Only Cookie for Refresh Token
+    const data = await loginUser({
+      email,
+      password,
+      isAdmin,
+      adminSecret,
+    });
+
     res.cookie("refreshToken", data.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    // Remove refreshToken from response body
     delete data.refreshToken;
 
     sendSuccess(res, {
@@ -58,20 +69,25 @@ export const login = async (req, res, next) => {
   }
 };
 
+/* ==========================================================
+   GOOGLE LOGIN
+========================================================== */
+
 export const googleAuth = async (req, res, next) => {
   try {
-    console.log('[auth.google] incoming body:', req.body);
-    const data = await googleAuthUser(req.body.credential, req.body.mode, req.body.plan);
+    const data = await googleAuthUser(
+      req.body.credential,
+      req.body.mode,
+      req.body.plan,
+    );
 
-    // Set HTTP-Only Cookie for Refresh Token
     res.cookie("refreshToken", data.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    // Remove refreshToken from response body
     delete data.refreshToken;
 
     sendSuccess(res, {
@@ -83,9 +99,14 @@ export const googleAuth = async (req, res, next) => {
   }
 };
 
+/* ==========================================================
+   CURRENT USER
+========================================================== */
+
 export const getMe = async (req, res, next) => {
   try {
     const user = await getCurrentUser(req.userId);
+
     sendSuccess(res, {
       data: { user },
     });
@@ -94,24 +115,30 @@ export const getMe = async (req, res, next) => {
   }
 };
 
+/* ==========================================================
+   REFRESH TOKEN
+========================================================== */
+
 export const refresh = async (req, res, next) => {
   try {
     const refreshToken = req.cookies?.refreshToken;
+
     if (!refreshToken) {
-      return res.status(401).json({ success: false, message: "Refresh token missing" });
+      return res.status(401).json({
+        success: false,
+        message: "Refresh token missing",
+      });
     }
 
     const tokens = await refreshUserTokens(refreshToken);
 
-    // Set new HTTP-Only Cookie for Refresh Token
     res.cookie("refreshToken", tokens.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    // Remove refreshToken from response body
     delete tokens.refreshToken;
 
     sendSuccess(res, {
@@ -123,12 +150,19 @@ export const refresh = async (req, res, next) => {
   }
 };
 
+/* ==========================================================
+   LOGOUT
+========================================================== */
+
 export const logout = async (req, res, next) => {
   try {
     const refreshToken = req.cookies?.refreshToken;
-    await logoutUser({ userId: req.userId, refreshToken });
-    
-    // Clear cookie
+
+    await logoutUser({
+      userId: req.userId,
+      refreshToken,
+    });
+
     res.clearCookie("refreshToken", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -146,8 +180,8 @@ export const logout = async (req, res, next) => {
 export default {
   register,
   login,
+  googleAuth,
   getMe,
   refresh,
   logout,
-  googleAuth,
 };

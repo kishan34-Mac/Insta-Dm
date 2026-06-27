@@ -1,0 +1,166 @@
+/* =========================================================
+   ADMIN BACKGROUND FIX ONLY
+   This file affects only admin pages.
+   User dashboard CSS will not be changed.
+   ========================================================= */
+
+/* ---------------------------------------------------------
+   1. Remove global body gradient/grid visually from admin
+   --------------------------------------------------------- */
+
+.admin-shell,
+.admin-page,
+.admin-main,
+.admin-header,
+.admin-sidebar {
+  background-color: #ffffff !important;
+  background-image: none !important;
+}
+
+/* Make sure admin page covers the full screen */
+.admin-shell {
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Main content must always remain white */
+.admin-main {
+  min-height: 100vh;
+}
+
+/* ---------------------------------------------------------
+   2. Remove purple/blue background from all admin cards
+   --------------------------------------------------------- */
+
+.admin-shell .admin-card,
+.admin-shell .admin-table-card,
+.admin-shell .admin-stat-card,
+.admin-shell .admin-plan-card {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  background-image: none !important;
+  border: 1px solid hsl(var(--border) / 0.6) !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Remove gradient overlay created through ::before / ::after */
+.admin-shell .admin-card::before,
+.admin-shell .admin-card::after,
+.admin-shell .admin-table-card::before,
+.admin-shell .admin-table-card::after,
+.admin-shell .admin-stat-card::before,
+.admin-shell .admin-stat-card::after,
+.admin-shell .admin-plan-card::before,
+.admin-shell .admin-plan-card::after {
+  content: none !important;
+  display: none !important;
+  background: none !important;
+  background-image: none !important;
+}
+
+/* Remove shared Card component glow / shine hover layers in admin */
+.admin-shell .admin-card > [aria-hidden],
+.admin-shell .admin-table-card > [aria-hidden],
+.admin-shell .admin-stat-card > [aria-hidden],
+.admin-shell .admin-plan-card > [aria-hidden] {
+  display: none !important;
+  opacity: 0 !important;
+  background: none !important;
+  background-image: none !important;
+}
+
+/* ---------------------------------------------------------
+   3. Hover: no coloured background
+   Keep the same clean surface as the dashboard cards
+   --------------------------------------------------------- */
+
+.admin-shell .admin-card:hover,
+.admin-shell .admin-card:focus-within,
+.admin-shell .admin-table-card:hover,
+.admin-shell .admin-table-card:focus-within,
+.admin-shell .admin-stat-card:hover,
+.admin-shell .admin-stat-card:focus-within,
+.admin-shell .admin-plan-card:hover,
+.admin-shell .admin-plan-card:focus-within {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  background-image: none !important;
+
+  border-color: hsl(var(--primary) / 0.4) !important;
+  box-shadow: var(--shadow-glow) !important;
+}
+
+/* Also force white during click */
+.admin-shell .admin-card:active,
+.admin-shell .admin-table-card:active,
+.admin-shell .admin-stat-card:active,
+.admin-shell .admin-plan-card:active {
+  background: #ffffff !important;
+  background-image: none !important;
+}
+
+/* ---------------------------------------------------------
+   4. Inputs and selects inside admin cards
+   --------------------------------------------------------- */
+
+.admin-shell .admin-card input,
+.admin-shell .admin-card button[role="combobox"],
+.admin-shell .admin-table-card input,
+.admin-shell .admin-table-card button[role="combobox"] {
+  background: #ffffff !important;
+  background-image: none !important;
+}
+
+/* Table row hover: only light gray */
+.admin-shell .admin-card tbody tr:hover,
+.admin-shell .admin-table-card tbody tr:hover {
+  background: hsl(var(--muted) / 0.45) !important;
+}
+
+/* ---------------------------------------------------------
+   5. Dark mode
+   --------------------------------------------------------- */
+
+.dark .admin-shell,
+.dark .admin-page,
+.dark .admin-main,
+.dark .admin-header,
+.dark .admin-sidebar {
+  background-color: #09090f !important;
+  background-image: none !important;
+}
+
+.dark .admin-shell .admin-card,
+.dark .admin-shell .admin-table-card,
+.dark .admin-shell .admin-stat-card,
+.dark .admin-shell .admin-plan-card {
+  background: #101016 !important;
+  background-color: #101016 !important;
+  background-image: none !important;
+  border: 1px solid hsl(var(--border) / 0.6) !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32) !important;
+}
+
+.dark .admin-shell .admin-card:hover,
+.dark .admin-shell .admin-card:focus-within,
+.dark .admin-shell .admin-table-card:hover,
+.dark .admin-shell .admin-table-card:focus-within,
+.dark .admin-shell .admin-stat-card:hover,
+.dark .admin-shell .admin-stat-card:focus-within,
+.dark .admin-shell .admin-plan-card:hover,
+.dark .admin-shell .admin-plan-card:focus-within {
+  background: #101016 !important;
+  background-color: #101016 !important;
+  background-image: none !important;
+
+  border-color: hsl(var(--primary) / 0.4) !important;
+  box-shadow: var(--shadow-glow) !important;
+}
+
+.dark .admin-shell .admin-card input,
+.dark .admin-shell .admin-card button[role="combobox"],
+.dark .admin-shell .admin-table-card input,
+.dark .admin-shell .admin-table-card button[role="combobox"] {
+  background: #09090f !important;
+  background-image: none !important;
+}

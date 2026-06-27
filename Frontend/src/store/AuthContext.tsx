@@ -13,8 +13,7 @@ import {
   type AuthUser,
 } from "@/api/auth";
 
-const STORAGE_KEY =
-  "athenura.auth";
+const STORAGE_KEY = "athenura.auth";
 
 type AuthState = {
   user: AuthUser | null;
@@ -26,6 +25,9 @@ type AuthState = {
   login: (input: {
     email: string;
     password: string;
+
+    isAdmin?: boolean;
+    adminSecret?: string;
   }) => Promise<void>;
 
   register: (input: {
@@ -33,6 +35,9 @@ type AuthState = {
     email: string;
     password: string;
     plan?: string;
+
+    isAdmin?: boolean;
+    adminSecret?: string;
   }) => Promise<void>;
 
   loginWithGoogle: (
@@ -44,126 +49,82 @@ type AuthState = {
   logout: () => Promise<void>;
 };
 
-const AuthContext =
-  createContext<AuthState | null>(
-    null
-  );
+const AuthContext = createContext<AuthState | null>(null);
 
-const readStoredAuth =
-  (): AuthPayload | null => {
-    try {
-      const raw =
-        localStorage.getItem(
-          STORAGE_KEY
-        );
+const readStoredAuth = (): AuthPayload | null => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
 
-      if (!raw) {
-        return null;
-      }
+    if (!raw) return null;
 
-      const payload =
-        JSON.parse(raw);
+    const payload = JSON.parse(raw);
 
-      if (
-        !payload?.user ||
-        !payload?.accessToken
-      ) {
-        localStorage.removeItem(
-          STORAGE_KEY
-        );
-
-        return null;
-      }
-
-      return payload;
-    } catch {
-      localStorage.removeItem(
-        STORAGE_KEY
-      );
-
+    if (!payload?.user || !payload?.accessToken) {
+      localStorage.removeItem(STORAGE_KEY);
       return null;
     }
-  };
+
+    return payload;
+  } catch {
+    localStorage.removeItem(STORAGE_KEY);
+    return null;
+  }
+};
 
 export function AuthProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [auth, setAuth] =
-    useState<AuthPayload | null>(
-      () => readStoredAuth()
-    );
+  const [auth, setAuth] = useState<AuthPayload | null>(() =>
+    readStoredAuth()
+  );
 
-  const persistAuth =
-    useCallback(
-      (
-        payload:
-          | AuthPayload
-          | null
-      ) => {
-        setAuth(payload);
+  const persistAuth = useCallback(
+    (payload: AuthPayload | null) => {
+      setAuth(payload);
 
-        if (payload) {
+      if (payload) {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify(payload)
+        );
+
+        localStorage.setItem(
+          "token",
+          payload.accessToken
+        );
+
+        localStorage.setItem(
+          "accessToken",
+          payload.accessToken
+        );
+
+        if (payload.refreshToken) {
           localStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify(payload)
-          );
-
-          localStorage.setItem(
-            "token",
-            payload.accessToken
-          );
-
-          localStorage.setItem(
-            "accessToken",
-            payload.accessToken
-          );
-
-          if (
+            "refreshToken",
             payload.refreshToken
-          ) {
-            localStorage.setItem(
-              "refreshToken",
-              payload.refreshToken
-            );
-          }
-
-          localStorage.setItem(
-            "user",
-            JSON.stringify(
-              payload.user
-            )
-          );
-
-          console.log(
-            "TOKEN SAVED:",
-            payload.accessToken
-          );
-        } else {
-          localStorage.removeItem(
-            STORAGE_KEY
-          );
-
-          localStorage.removeItem(
-            "token"
-          );
-
-          localStorage.removeItem(
-            "accessToken"
-          );
-
-          localStorage.removeItem(
-            "refreshToken"
-          );
-
-          localStorage.removeItem(
-            "user"
           );
         }
-      },
-      []
-    );
+
+        localStorage.setItem(
+          "user",
+          JSON.stringify(payload.user)
+        );
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+
+        localStorage.removeItem("token");
+
+        localStorage.removeItem("accessToken");
+
+        localStorage.removeItem("refreshToken");
+
+        localStorage.removeItem("user");
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     const handleAuthRefresh = (
@@ -172,9 +133,7 @@ export function AuthProvider({
       const customEvent =
         event as CustomEvent<AuthPayload>;
 
-      setAuth(
-        customEvent.detail
-      );
+      setAuth(customEvent.detail);
     };
 
     window.addEventListener(
@@ -189,122 +148,121 @@ export function AuthProvider({
       );
   }, []);
 
-  const login =
-    useCallback(
-      async (input: {
-        email: string;
-        password: string;
-      }) => {
-        const response =
-          await authApi.login(
-            input
-          );
+  /* ==========================================================
+      LOGIN
+  ========================================================== */
 
-        persistAuth(response);
-      },
-      [persistAuth]
-    );
-//nnn
-  const register =
-    useCallback(
-      async (input: {
-        name: string;
-        email: string;
-        password: string;
-        plan?: string;
-      }) => {
-        const response =
-          await authApi.register(
-            input
-          );
+  const login = useCallback(
+    async (input: {
+      email: string;
+      password: string;
 
-        persistAuth(response);
-      },
-      [persistAuth]
-    );
+      isAdmin?: boolean;
+      adminSecret?: string;
+    }) => {
+      const response = await authApi.login(input);
 
-  const loginWithGoogle =
-    useCallback(
-      async (
-        credential: string,
-        mode:
-          | "login"
-          | "signup",
-        plan?: string
-      ) => {
-        const response =
-          await authApi.googleAuth(
-            credential,
-            mode,
-            plan
-          );
+      persistAuth(response);
+    },
+    [persistAuth]
+  );
 
-        persistAuth(response);
-      },
-      [persistAuth]
-    );
+  /* ==========================================================
+      REGISTER
+  ========================================================== */
 
-  const logout =
-    useCallback(async () => {
-      try {
-        if (
-          auth?.accessToken
-        ) {
-          await authApi.logout(
-            auth.refreshToken ??
-              undefined
-          );
-        }
-      } catch (error) {
-        console.error(error);
+  const register = useCallback(
+    async (input: {
+      name: string;
+      email: string;
+      password: string;
+      plan?: string;
+
+      isAdmin?: boolean;
+      adminSecret?: string;
+    }) => {
+      const response = await authApi.register(input);
+
+      persistAuth(response);
+    },
+    [persistAuth]
+  );
+
+  /* ==========================================================
+      GOOGLE LOGIN
+  ========================================================== */
+
+  const loginWithGoogle = useCallback(
+    async (
+      credential: string,
+      mode: "login" | "signup",
+      plan?: string
+    ) => {
+      const response = await authApi.googleAuth(
+        credential,
+        mode,
+        plan
+      );
+
+      persistAuth(response);
+    },
+    [persistAuth]
+  );
+
+  /* ==========================================================
+      LOGOUT
+  ========================================================== */
+
+  const logout = useCallback(async () => {
+    try {
+      if (auth?.accessToken) {
+        await authApi.logout(
+          auth.refreshToken ?? undefined
+        );
       }
+    } catch (error) {
+      console.error(error);
+    }
 
-      persistAuth(null);
-    }, [auth, persistAuth]);
+    persistAuth(null);
+  }, [auth, persistAuth]);
 
-  const value =
-    useMemo<AuthState>(
-      () => ({
-        user:
-          auth?.user ?? null,
+  const value = useMemo<AuthState>(
+    () => ({
+      user: auth?.user ?? null,
 
-        accessToken:
-          auth?.accessToken ??
-          null,
+      accessToken:
+        auth?.accessToken ?? null,
 
-        refreshToken:
-          auth?.refreshToken ??
-          null,
+      refreshToken:
+        auth?.refreshToken ?? null,
 
-        login,
+      login,
 
-        register,
+      register,
 
-        loginWithGoogle,
+      loginWithGoogle,
 
-        logout,
-      }),
-      [
-        auth,
-        login,
-        register,
-        loginWithGoogle,
-        logout,
-      ]
-    );
+      logout,
+    }),
+    [
+      auth,
+      login,
+      register,
+      loginWithGoogle,
+      logout,
+    ]
+  );
 
   return (
-    <AuthContext.Provider
-      value={value}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
 }
 
 export const useAuth = () => {
-  const context =
-    useContext(AuthContext);
+  const context = useContext(AuthContext);
 
   if (!context) {
     throw new Error(
