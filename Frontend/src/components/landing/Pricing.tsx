@@ -13,7 +13,7 @@ const tiers = [
 
 export function Pricing() {
   return (
-    <section id="pricing" className="py-16 sm:py-24 lg:py-28">
+    <section id="pricing" className="py-8 md:py-16 sm:py-24 lg:py-28">
       <div className="container">
         <div className="text-center max-w-2xl mx-auto mb-16">
           <p className="text-xs font-semibold tracking-widest uppercase text-primary mb-3">Pricing</p>
@@ -46,7 +46,7 @@ export function Pricing() {
               <h3 className="font-semibold text-lg">{t.name}</h3>
               <p className="text-sm text-muted-foreground mt-1">{t.desc}</p>
               <div className="mt-5 flex items-baseline gap-1">
-                <span className="font-display text-4xl font-bold">{t.price}</span>
+                <span className="font-display text-2xl md:text-4xl font-bold">{t.price}</span>
                 <span className="text-muted-foreground text-sm">/mo</span>
               </div>
               <Button variant={t.variant} className="w-full mt-5" asChild>

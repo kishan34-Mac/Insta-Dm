@@ -51,14 +51,14 @@ export function BrandLogo({
   const content = (
     <span
       className={cn(
-        "inline-flex items-center shrink-0 h-8 w-auto mr-2 min-w-0",
+        "inline-flex items-center shrink-0 h-12 w-auto mr-2 min-w-0",
         animated && "transition-transform duration-300 hover:scale-105",
         className,
       )}
       aria-label="Athenura"
     >
       <span className="font-display text-xl font-bold tracking-tight min-w-0 flex items-center">
-         <img src="/assets/athenura-logo.png" alt="brandlogo" className="h-8 w-auto max-w-full object-contain dark:brightness-0 dark:invert transition-all" />
+         <img src="/assets/athenura-logo.png" alt="brandlogo" className="h-12 w-auto max-w-full object-contain dark:brightness-0 dark:invert transition-all" />
       </span>
     </span>
   );
@@ -74,14 +74,14 @@ export function BrandLogo({
   return (
     <span
       className={cn(
-        "inline-flex items-center shrink-0 h-8 w-auto mr-2 min-w-0",
+        "inline-flex items-center shrink-0 h-12 w-auto mr-2 min-w-0",
         animated && "transition-transform duration-300 hover:scale-105",
         className,
       )}
       aria-label="Athenura"
     >
       <span className="font-display text-xl font-bold tracking-tight min-w-0 flex items-center">
-        <img src="/assets/athenura-logo.png" alt="brandlogo" className="h-8 w-auto max-w-full object-contain dark:brightness-0 dark:invert transition-all" />
+        <img src="/assets/athenura-logo.png" alt="brandlogo" className="h-12 w-auto max-w-full object-contain dark:brightness-0 dark:invert transition-all" />
       </span>
     </span>
   );

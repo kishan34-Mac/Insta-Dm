@@ -115,7 +115,7 @@ export function Footer() {
         {/* top border */}
         <div className="absolute left-0 right-0 top-0 h-[1px] bg-gradient-to-r from-primary/30 via-accent/30 to-primary/30" />
 
-        <div className="relative px-4 py-6 sm:px-6 lg:px-8">
+        <div className="relative py-6 sm:px-6 lg:px-8">
 
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -125,12 +125,12 @@ export function Footer() {
             className="container"
           >
             {/* Main grid */}
-            <div className="grid gap-20 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
+            <div className="grid gap-6 md:gap-20 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
               {/* Brand */}
               <div className="lg:col-span-1">
 
                 <div className="mt-4">
-                  <img src="/assets/athenura-logo.png" alt="Athenura" className="h-7 w-auto object-contain dark:brightness-0 dark:invert transition-all" />
+                  <img src="/assets/athenura-logo.png" alt="Athenura" className="h-10 w-auto object-contain dark:brightness-0 dark:invert transition-all" />
                 </div>
                 <p className="mt-2 max-w-xs text-sm text-muted-foreground">
                   Turn Instagram comments into paying customers automatically.
@@ -155,7 +155,7 @@ export function Footer() {
 
               {/* Product */}
               <div className="lg:col-span-1">
-                <h4 className="text-sm font-semibold text-muted-foreground">Product</h4>
+                <h4 className="text-md font-semibold text-muted-foreground">Product</h4>
                 <ul className="mt-4 space-y-2">
 
                   {productLinks.map(([label, href]) => (
@@ -168,7 +168,7 @@ export function Footer() {
 
               {/* Resources */}
               <div className="lg:col-span-1">
-                <h4 className="text-sm font-semibold text-muted-foreground">Resources</h4>
+                <h4 className="text-md font-semibold text-muted-foreground">Resources</h4>
                 <ul className="mt-4 space-y-2">
 
                   {resourcesLinks.map(([label, href]) => (
@@ -181,7 +181,7 @@ export function Footer() {
 
               {/* Company */}
               <div className="lg:col-span-1">
-                <h4 className="text-sm font-semibold text-muted-foreground">Company</h4>
+                <h4 className="text-md font-semibold text-muted-foreground">Company</h4>
                 <ul className="mt-4 space-y-2">
                   <li>
                     <a href="#" className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
