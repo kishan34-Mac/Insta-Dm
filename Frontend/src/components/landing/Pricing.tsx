@@ -1,8 +1,9 @@
 import { motion } from "framer-motion";
 import { Check } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/store/AuthContext";
 
 const tiers = [
   { name: "Free", price: "$0", desc: "Try it out", features: ["1 connected account", "100 DMs / month", "Basic analytics"], cta: "Start free", variant: "outline" as const },
@@ -12,6 +13,42 @@ const tiers = [
 ];
 
 export function Pricing() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const handleTierCta = (planName: string) => {
+    const planKey = planName.toLowerCase();
+
+    // Map landing tiers to backend plan keys used in Settings.tsx
+    // Free/Start free should not trigger Razorpay. Keep signup flow for now.
+    if (planKey === "free") {
+      return null;
+    }
+
+    if (planKey === "agency") {
+      // message says “sales” but project tier is “Agency”
+      return "agency";
+    }
+
+    if (planKey === "starter" || planKey === "pro") return planKey;
+
+    return null;
+  };
+
+  const onCtaClick = (tierName: string) => {
+    const selected = handleTierCta(tierName);
+
+    // If logged in and a paid tier selected -> redirect to dashboard settings to auto-upgrade
+    if (user && selected) {
+      navigate(`/dashboard/settings?upgradePlan=${selected}`);
+      return;
+    }
+
+    // Otherwise keep existing signup flow (logged out or Free)
+    const signupPlan = tierName.toLowerCase();
+    navigate(`/signup?plan=${signupPlan}`);
+  };
+
   return (
     <section id="pricing" className="py-16 sm:py-24 lg:py-28">
       <div className="container">
@@ -49,8 +86,12 @@ export function Pricing() {
                 <span className="font-display text-4xl font-semibold">{t.price}</span>
                 <span className={cn("text-sm", t.popular ? "text-muted-foreground" : "text-muted-foreground")}>/mo</span>
               </div>
-              <Button variant={t.popular ? "hero" : "outline"} className="w-full mt-5" asChild>
-                <Link to={`/signup?plan=${t.name.toLowerCase()}`}>{t.cta}</Link>
+              <Button
+                variant={t.popular ? "hero" : "outline"}
+                className="w-full mt-5"
+                onClick={() => onCtaClick(t.name)}
+              >
+                {t.cta}
               </Button>
               <ul className="mt-6 space-y-3">
                 {t.features.map((f) => (
