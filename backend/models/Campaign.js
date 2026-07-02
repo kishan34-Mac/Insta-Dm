@@ -160,6 +160,12 @@ const CampaignSchema = new mongoose.Schema(
       default: false,
     },
 
+    matchType: {
+      type: String,
+      enum: ["contains", "exact", "starts_with", "ends_with"],
+      default: "contains",
+    },
+
     caseSensitive: {
       type: Boolean,
       default: false,
@@ -244,12 +250,6 @@ const CampaignSchema = new mongoose.Schema(
       type: String,
       trim: true,
       default: "",
-      validate: {
-        validator: function (v) {
-          return typeof v === "string" && v.trim().length > 0;
-        },
-        message: "autoReplyMessage is required",
-      },
     },
   },
   {

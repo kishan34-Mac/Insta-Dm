@@ -6,6 +6,7 @@ import {
   updateCampaign,
   deleteCampaign,
   toggleCampaignStatus,
+  getCampaignLogs,
 } from "../controllers/campaign.controller.js";
 import { protect } from "../middleware/auth.middleware.js";
 import { validate } from "../validators/auth.validator.js";
@@ -22,6 +23,8 @@ router.use(protect);
 router.route("/")
   .get(getCampaigns)
   .post(validate(createCampaignSchema), createCampaign);
+
+router.get("/:id/logs", validate(getCampaignByIdSchema), getCampaignLogs);
 
 router.route("/:id")
   .get(validate(getCampaignByIdSchema), getCampaignById)

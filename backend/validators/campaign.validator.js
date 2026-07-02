@@ -16,16 +16,15 @@ export const createCampaignSchema = z.object({
       .enum(["comment", "keyword", "direct_message", "story_reply"])
       .default("keyword"),
     triggerKeywords: z
-      .array(z.string().trim().lowercase())
-      .min(1, "At least one trigger keyword is required")
+      .array(z.string().trim())
       .optional(),
-    keywords: z.array(z.string().trim().lowercase()).optional(),
-    postId: z.string().optional(),
-    postUrl: z.string().optional(),
+    keywords: z.array(z.string().trim()).optional(),
+    postId: z.string().nullable().optional(),
+    postUrl: z.string().nullable().optional(),
     steps: z.array(campaignStepSchema).default([]),
     status: z.enum(["draft", "active", "paused", "completed", "stopped"]).default("draft"),
     instagramAccount: z.string().min(1, "Instagram account is required"),
-    autoReplyMessage: z.string().trim().min(1, "Auto reply message is required"),
+    autoReplyMessage: z.string().trim().optional(),
   }),
 });
 
@@ -39,14 +38,14 @@ export const updateCampaignSchema = z.object({
     triggerType: z
       .enum(["comment", "keyword", "direct_message", "story_reply"])
       .optional(),
-    triggerKeywords: z.array(z.string().trim().lowercase()).min(1).optional(),
-    keywords: z.array(z.string().trim().lowercase()).optional(),
-    postId: z.string().optional(),
-    postUrl: z.string().optional(),
+    triggerKeywords: z.array(z.string().trim()).optional(),
+    keywords: z.array(z.string().trim()).optional(),
+    postId: z.string().nullable().optional(),
+    postUrl: z.string().nullable().optional(),
     steps: z.array(campaignStepSchema).optional(),
     status: z.enum(["draft", "active", "paused", "completed", "stopped"]).optional(),
     instagramAccount: z.string().min(1).optional(),
-    autoReplyMessage: z.string().trim().min(1).optional(),
+    autoReplyMessage: z.string().trim().optional(),
   }),
 });
 

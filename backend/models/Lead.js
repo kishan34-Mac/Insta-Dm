@@ -6,6 +6,7 @@ const leadSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
+      index: true,
     },
 
     igUserId: {
@@ -26,6 +27,12 @@ const leadSchema = new mongoose.Schema(
       },
     ],
 
+    conversation: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Conversation",
+      default: null,
+    },
+
     source: {
       type: String,
       default: "instagram-comment",
@@ -33,8 +40,9 @@ const leadSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["new", "contacted", "replied", "won", "lost"],
+      enum: ["new", "contacted", "replied", "interested", "converted", "won", "lost", "closed"],
       default: "new",
+      index: true,
     },
 
     dmSent: {
@@ -52,9 +60,25 @@ const leadSchema = new mongoose.Schema(
       default: [],
     },
 
+    leadScore: {
+      type: Number,
+      default: 10,
+    },
+
+    messagesCount: {
+      type: Number,
+      default: 1,
+    },
+
+    firstContact: {
+      type: Date,
+      default: Date.now,
+    },
+
     lastContacted: {
       type: Date,
       default: Date.now,
+      index: true,
     },
 
     comment: {
@@ -72,14 +96,11 @@ const leadSchema = new mongoose.Schema(
   }
 );
 
-// Compound index of lead per user/igUserId (non-unique to allow multiple interactions)
+// Index for fast querying by user and igUserId (non-unique to allow one Lead per campaign trigger)
 leadSchema.index({ user: 1, igUserId: 1 });
-
-// Index for counting leads by campaign
 leadSchema.index({ campaigns: 1 });
-
-// Index for filtering by status
 leadSchema.index({ user: 1, status: 1 });
+leadSchema.index({ createdAt: -1 });
 
 // Text index for search functionality
 leadSchema.index({

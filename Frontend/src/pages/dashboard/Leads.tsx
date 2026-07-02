@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { Search, Edit3, X, Save, Tag as TagIcon, StickyNote, Activity } from "lucide-react";
+import { Search, Edit3, X, Save, Tag as TagIcon, StickyNote, Activity, MessageSquare } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -314,6 +314,73 @@ export default function Leads() {
                   <div>
                     <span className="text-[10px] text-zinc-500 uppercase font-semibold">Matched Keyword</span>
                     <p className="text-sm font-semibold text-primary mt-0.5 font-mono">#{selectedLead.keyword || "N/A"}</p>
+                  </div>
+                </div>
+
+                {/* Complete Conversation History Chat Thread */}
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-zinc-400 uppercase flex items-center gap-1.5">
+                    <MessageSquare className="h-3.5 w-3.5 text-primary" />
+                    Complete Conversation History ({selectedLead.conversation?.messages?.length || (selectedLead.comment ? 1 : 0)} Messages)
+                  </label>
+
+                  <div className="max-h-64 overflow-y-auto p-4 rounded-xl bg-zinc-950 border border-zinc-800/80 space-y-3 font-sans">
+                    {selectedLead.conversation?.messages && selectedLead.conversation.messages.length > 0 ? (
+                      selectedLead.conversation.messages.map((msg, i) => {
+                        const isInbound = msg.direction === "inbound";
+                        return (
+                          <div
+                            key={msg._id || i}
+                            className={`flex flex-col ${isInbound ? "items-start" : "items-end"}`}
+                          >
+                            <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 mb-1">
+                              <span className="font-medium">{isInbound ? `@${selectedLead.igUsername}` : "Auto DM"}</span>
+                              <span>•</span>
+                              <span>
+                                {new Date(msg.timestamp).toLocaleTimeString("en-US", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </span>
+                            </div>
+                            <div
+                              className={`max-w-[85%] px-3.5 py-2 rounded-2xl text-xs leading-relaxed ${
+                                isInbound
+                                  ? "bg-zinc-900 text-zinc-200 border border-zinc-800 rounded-tl-sm"
+                                  : "bg-primary/20 text-emerald-300 border border-primary/30 rounded-tr-sm"
+                              }`}
+                            >
+                              {msg.text}
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : selectedLead.comment ? (
+                      <div className="space-y-3">
+                        <div className="flex flex-col items-start">
+                          <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 mb-1">
+                            <span className="font-medium">@{selectedLead.igUsername} (Trigger Comment)</span>
+                          </div>
+                          <div className="max-w-[85%] px-3.5 py-2 rounded-2xl text-xs bg-zinc-900 text-zinc-200 border border-zinc-800 rounded-tl-sm">
+                            {selectedLead.comment}
+                          </div>
+                        </div>
+                        {selectedLead.dmSent && (
+                          <div className="flex flex-col items-end">
+                            <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 mb-1">
+                              <span className="font-medium">Auto DM</span>
+                            </div>
+                            <div className="max-w-[85%] px-3.5 py-2 rounded-2xl text-xs bg-primary/20 text-emerald-300 border border-primary/30 rounded-tr-sm">
+                              Auto DM Delivered
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-6 text-xs text-zinc-500 italic">
+                        No conversation history recorded for this lead.
+                      </div>
+                    )}
                   </div>
                 </div>
 

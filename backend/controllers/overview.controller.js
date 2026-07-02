@@ -2,6 +2,8 @@ import mongoose from "mongoose";
 import Campaign from "../models/Campaign.js";
 import Lead from "../models/Lead.js";
 
+import ExecutionLog from "../models/ExecutionLog.js";
+
 export const getOverview = async (req, res, next) => {
   try {
     const userId = req.user?._id || req.userId;
@@ -15,9 +17,17 @@ export const getOverview = async (req, res, next) => {
     const userObjectId = new mongoose.Types.ObjectId(userId);
 
     // 1. Stats Cards
-    const totalCampaigns = await Campaign.countDocuments({ user: userObjectId });
-    const totalLeads = await Lead.countDocuments({ user: userObjectId });
-    const activeCampaigns = await Campaign.countDocuments({ user: userObjectId, status: "active" });
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const [totalCampaigns, totalLeads, activeCampaigns, pausedCampaigns, todayLeads, messagesFailed] = await Promise.all([
+      Campaign.countDocuments({ user: userObjectId }),
+      Lead.countDocuments({ user: userObjectId }),
+      Campaign.countDocuments({ user: userObjectId, status: "active" }),
+      Campaign.countDocuments({ user: userObjectId, status: "paused" }),
+      Lead.countDocuments({ user: userObjectId, createdAt: { $gte: startOfToday } }),
+      ExecutionLog.countDocuments({ user: userObjectId, status: "failed" }),
+    ]);
 
     // Aggregate total messages sent across all campaigns
     const campaignStats = await Campaign.aggregate([
@@ -146,6 +156,9 @@ export const getOverview = async (req, res, next) => {
           totalSent,
           replyRate,
           activeCampaigns,
+          pausedCampaigns,
+          todayLeads,
+          messagesFailed,
         },
         charts: {
           dmSeries,

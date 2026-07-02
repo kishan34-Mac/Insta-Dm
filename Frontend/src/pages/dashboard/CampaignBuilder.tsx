@@ -188,6 +188,8 @@ export default function CampaignBuilder() {
 
     setSaving(true);
 
+    const firstMsg = steps.find((s) => s.type === "message" && s.value.trim())?.value || "";
+
     const campaignData = {
       name,
 
@@ -200,6 +202,8 @@ export default function CampaignBuilder() {
       status,
 
       triggerType: "keyword",
+
+      autoReplyMessage: firstMsg,
 
       steps: steps.map((s, index) => ({
         type: s.type,
@@ -224,10 +228,15 @@ export default function CampaignBuilder() {
       }
 
       navigate("/dashboard/campaigns");
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      console.error("Save campaign error:", error);
 
-      toast.error("Failed to save campaign");
+      const errorMsg =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to save campaign";
+
+      toast.error(errorMsg);
     } finally {
       setSaving(false);
     }

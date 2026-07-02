@@ -94,7 +94,7 @@ export default function AdminLogin() {
 
           <Input
             type="email"
-            placeholder="admin@athenura.com"
+            placeholder="kishan122@gmail.com"
             {...register("email")}
           />
 

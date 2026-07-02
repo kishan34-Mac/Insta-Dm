@@ -113,3 +113,44 @@ test("Timing-Safe Cryptographic Signature Comparisons", () => {
   assert.equal(timingSafeCompare(sigA, sigB), true);
   assert.equal(timingSafeCompare(sigA, sigC), false);
 });
+
+// --- ADVANCED KEYWORD MATCHING ENGINE TESTS ---
+import { matchKeyword } from "../services/keyword.service.js";
+
+test("Keyword Normalization, Casing, Emojis and Punctuation Matching", () => {
+  const keywords = ["hello", "price", "buy", "discount"];
+
+  // 1. Case insensitive & punctuation
+  const match1 = matchKeyword("Hello!!", keywords);
+  assert.equal(match1.isMatch, true);
+  assert.equal(match1.matchedKeyword, "hello");
+
+  // 2. Extra spaces, emojis, and uppercase
+  const match2 = matchKeyword(" 🔥  BUY NOW  🎉 ", keywords);
+  assert.equal(match2.isMatch, true);
+  assert.equal(match2.matchedKeyword, "buy");
+
+  // 3. Contains mode
+  const match3 = matchKeyword("Hey can you tell me the PRICE please?", keywords);
+  assert.equal(match3.isMatch, true);
+  assert.equal(match3.matchedKeyword, "price");
+
+  // 4. Exact mode failure when mismatch
+  const match4 = matchKeyword("Hello everyone", keywords, { matchType: "exact" });
+  assert.equal(match4.isMatch, false);
+
+  // 5. Exact mode success
+  const match5 = matchKeyword("DISCOUNT!!!", keywords, { matchType: "exact" });
+  assert.equal(match5.isMatch, true);
+  assert.equal(match5.matchedKeyword, "discount");
+});
+
+// --- DEDICATED LEAD PERSISTENCE ENGINE TESTS ---
+import { saveOrUpdateLead } from "../services/lead.service.js";
+
+test("Lead Persistence Module Loading and Input Guarding", async () => {
+  const missingRes = await saveOrUpdateLead({ user: "6a461cfeb0515da7067687ba", igUserId: "", igUsername: "" });
+  assert.equal(missingRes.success, false);
+  assert.equal(missingRes.reason, "MISSING_CUSTOMER_IDENTIFIER");
+});
+

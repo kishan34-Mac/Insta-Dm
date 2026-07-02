@@ -107,13 +107,11 @@ export const useRealtimeStore = create<RealtimeState>((set) => ({
 
   handleLeadCreated: (lead) =>
     set((state) => {
-      // 1. Avoid inserting duplicate leads
-      if (state.leads.some((l) => l._id === lead._id)) {
-        return {};
-      }
-
-      // 2. Prepend lead
-      const updatedLeads = [lead, ...state.leads];
+      // Prepend lead to top, deduplicating existing lead by _id or igUserId if present
+      const filteredLeads = state.leads.filter(
+        (l) => l._id !== lead._id && l.igUserId !== lead.igUserId
+      );
+      const updatedLeads = [lead, ...filteredLeads];
 
       // 3. Update overview counters
       let updatedOverview = state.overview;
@@ -133,7 +131,7 @@ export const useRealtimeStore = create<RealtimeState>((set) => ({
           ...updatedOverview,
           stats: {
             ...updatedOverview.stats,
-            totalLeads: updatedOverview.stats.totalLeads + 1,
+            totalLeads: (updatedOverview.stats?.totalLeads || 0) + 1,
           },
           recentActivities: [newActivity, ...updatedOverview.recentActivities].slice(0, 6),
         };
@@ -146,7 +144,7 @@ export const useRealtimeStore = create<RealtimeState>((set) => ({
           ...updatedAnalytics,
           summary: {
             ...updatedAnalytics.summary,
-            totalLeads: updatedAnalytics.summary.totalLeads + 1,
+            totalLeads: (updatedAnalytics.summary?.totalLeads || 0) + 1,
           },
         };
       }
@@ -160,8 +158,11 @@ export const useRealtimeStore = create<RealtimeState>((set) => ({
 
   handleLeadUpdated: (lead) =>
     set((state) => {
-      // 1. Update the lead in leads CRM list
-      const updatedLeads = state.leads.map((l) => (l._id === lead._id ? lead : l));
+      // Update lead and move to top of CRM list, deduplicating by _id or igUserId
+      const filteredLeads = state.leads.filter(
+        (l) => l._id !== lead._id && l.igUserId !== lead.igUserId
+      );
+      const updatedLeads = [lead, ...filteredLeads];
 
       // 2. If status was updated to replied, also check activities to append a reply feed item
       let updatedOverview = state.overview;

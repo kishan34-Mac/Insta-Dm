@@ -198,6 +198,8 @@ app.use((req, res) => {
 });
 
 
+import { seedAdminUser } from "./utils/seedAdmin.js";
+
 app.use(errorHandler);
 
 const startServer = async () => {
@@ -205,6 +207,7 @@ const startServer = async () => {
     await connectDB();
 
     console.log("✅ MongoDB connected");
+    await seedAdminUser();
 
     const server = app.listen(env.PORT, () => {
       console.log(`

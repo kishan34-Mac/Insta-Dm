@@ -64,37 +64,20 @@ export const createCampaign = async (
       );
     }
 
-    let finalAutoReplyMessage =
-      autoReplyMessage;
+    let finalAutoReplyMessage = autoReplyMessage;
 
-    if (
-      !finalAutoReplyMessage &&
-      Array.isArray(steps)
-    ) {
-      const firstMessageStep =
-        steps.find(
-          (step) =>
-            step.type ===
-              "message" &&
-            step.value
-        );
+    if (!finalAutoReplyMessage && Array.isArray(steps)) {
+      const firstMessageStep = steps.find(
+        (step) => step.type === "message" && step.value
+      );
 
       if (firstMessageStep) {
-        finalAutoReplyMessage =
-          firstMessageStep.value;
+        finalAutoReplyMessage = firstMessageStep.value;
       }
     }
 
-    if (
-      !finalAutoReplyMessage ||
-      !String(
-        finalAutoReplyMessage
-      ).trim()
-    ) {
-      throw new AppError(
-        "Auto reply message is required",
-        400
-      );
+    if (!finalAutoReplyMessage) {
+      finalAutoReplyMessage = "";
     }
 
     if (!instagramAccount) {
@@ -123,7 +106,7 @@ export const createCampaign = async (
           sanitizedKeywords,
 
         postId:
-          postId || postUrl,
+          postId || postUrl || "",
 
         steps: steps || [],
 
@@ -132,10 +115,7 @@ export const createCampaign = async (
 
         instagramAccount,
 
-        autoReplyMessage:
-          String(
-            finalAutoReplyMessage
-          ).trim(),
+        autoReplyMessage: String(finalAutoReplyMessage).trim(),
 
         isActive: true,
       });
@@ -289,6 +269,22 @@ export const updateCampaign =
             keywords
         );
 
+      let finalAutoReplyMessage = autoReplyMessage;
+
+      if (!finalAutoReplyMessage && Array.isArray(steps)) {
+        const firstMessageStep = steps.find(
+          (step) => step.type === "message" && step.value
+        );
+
+        if (firstMessageStep) {
+          finalAutoReplyMessage = firstMessageStep.value;
+        }
+      }
+
+      if (!finalAutoReplyMessage) {
+        finalAutoReplyMessage = "";
+      }
+
       const campaign =
         await Campaign.findOneAndUpdate(
           {
@@ -311,7 +307,7 @@ export const updateCampaign =
 
             postId:
               postId ||
-              postUrl,
+              postUrl || "",
 
             steps,
 
@@ -319,10 +315,7 @@ export const updateCampaign =
 
             instagramAccount,
 
-            autoReplyMessage:
-              String(
-                autoReplyMessage
-              ).trim(),
+            autoReplyMessage: String(finalAutoReplyMessage).trim(),
           },
           {
             returnDocument: "after",
@@ -420,3 +413,23 @@ export const toggleCampaignStatus =
       next(error);
     }
   };
+
+import ExecutionLog from "../models/ExecutionLog.js";
+
+export const getCampaignLogs = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const logs = await ExecutionLog.find({
+      campaign: id,
+      user: req.user?._id || req.userId,
+    })
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    return sendSuccess(res, {
+      data: logs,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

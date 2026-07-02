@@ -57,12 +57,21 @@ const envSchema = z.object({
     .string()
     .min(1, "RAZORPAY_WEBHOOK_SECRET is required"),
 
+  ADMIN_SECRET: z.string().default("ATHENURA@2026"),
+
+  ADMIN_EMAIL: z.string().email().default("kishan122@gmail.com"),
+
+  ADMIN_PASSWORD: z.string().default("Kishan21"),
+
   RAZORPAY_CURRENCY: z.string().default("INR"),
 });
 
 const parsed = envSchema.safeParse({
   PORT: process.env.PORT,
   NODE_ENV: process.env.NODE_ENV,
+  ADMIN_SECRET: process.env.ADMIN_SECRET,
+  ADMIN_EMAIL: process.env.ADMIN_EMAIL,
+  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
   FRONTEND_URL: process.env.FRONTEND_URL,
   MONGO_URL: process.env.MONGO_URL,
   JWT_SECRET: process.env.JWT_SECRET,

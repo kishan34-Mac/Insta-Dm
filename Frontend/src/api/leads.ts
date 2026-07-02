@@ -1,5 +1,25 @@
 import http from "./http";
 
+export interface ConversationMessage {
+  _id?: string;
+  messageId?: string;
+  senderId: string;
+  recipientId: string;
+  direction: "inbound" | "outbound";
+  text: string;
+  status?: string;
+  timestamp: string | Date;
+}
+
+export interface LeadConversation {
+  _id?: string;
+  igUserId?: string;
+  igUsername?: string;
+  lastMessage?: string;
+  lastMessageAt?: string;
+  messages: ConversationMessage[];
+}
+
 export interface Lead {
   _id: string;
   igUserId: string;
@@ -16,6 +36,7 @@ export interface Lead {
     _id: string;
     name: string;
   }>;
+  conversation?: LeadConversation | null;
   createdAt: string;
   updatedAt: string;
 }
