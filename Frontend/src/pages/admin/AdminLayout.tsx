@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Users,
   CreditCard,
+  Megaphone,
   LogOut,
   Sun,
   Moon,
@@ -33,7 +34,12 @@ const adminLinks = [
     to: "/admin/payments",
     icon: CreditCard,
   },
-  
+  {
+    label: "Campaigns",
+    to: "/admin/campaigns",
+    icon: Megaphone,
+  },
+ 
 ];
 
 export default function AdminLayout() {
