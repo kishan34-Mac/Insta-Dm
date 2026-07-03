@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
+
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -41,6 +42,7 @@ const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminPayments = lazy(() => import("./pages/admin/AdminPayments"));
+const AdminCampaigns = lazy(() => import("./pages/admin/AdminCampaigns"));
 
 const queryClient = new QueryClient();
 
@@ -137,6 +139,10 @@ export default function App() {
                         <Route
                           path="payments"
                           element={<AdminPayments />}
+                        />
+                        <Route
+                          path="campaigns"
+                          element={<AdminCampaigns />}
                         />
                       </Route>
                     </Route>

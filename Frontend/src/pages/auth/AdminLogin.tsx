@@ -16,7 +16,6 @@ import { z } from "zod";
 const adminLoginSchema = z.object({
   email: z.string().email("Enter valid email"),
   password: z.string().min(8),
-  adminSecret: z.string().min(1, "Admin Secret Key is required"),
 });
 
 type AdminLoginData = z.infer<typeof adminLoginSchema>;
@@ -49,7 +48,6 @@ export default function AdminLogin() {
         email: data.email,
         password: data.password,
         isAdmin: true,
-        adminSecret: data.adminSecret,
       });
 
       toast.success("Welcome Admin", {
@@ -121,21 +119,7 @@ export default function AdminLogin() {
           )}
         </div>
 
-        <div>
-          <Label>Admin Secret Key</Label>
-
-          <Input
-            type="password"
-            placeholder="Enter Secret Key"
-            {...register("adminSecret")}
-          />
-
-          {errors.adminSecret && (
-            <p className="text-xs text-destructive mt-1">
-              {errors.adminSecret.message}
-            </p>
-          )}
-        </div>
+       
 
         <Button
           className="w-full"

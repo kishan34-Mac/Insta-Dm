@@ -209,42 +209,43 @@ export const googleAuthUser = async (credential, mode, plan) => {
 
 
 
-export const loginUser = async ({
-  email,
-  password,
-  isAdmin = false,
-  adminSecret,
-}) => {
-  const normalizedEmail = String(email || "").trim().toLowerCase();
+export const loginUser = async ({ email, password, isAdmin = false, adminSecret }) => {
+  const normalizedEmail = String(email || "")
+    .trim()
+    .toLowerCase();
   const cleanPassword = String(password || "");
   const cleanAdminSecret = String(adminSecret || "").trim();
 
   const user = await User.findOne({
     email: normalizedEmail,
   }).select(
-    "+password +refreshTokens +loginAttempts +lockUntil +mfaEnabled +mfaSecret"
+    "+password +refreshTokens +loginAttempts +lockUntil +mfaEnabled +mfaSecret",
   );
 
   if (!user) {
-    throw new AppError(
-      "Invalid email or password",
-      401
-    );
+    throw new AppError("Invalid email or password", 401);
+  }
+  // Prevent admins from using normal user login
+  if (!isAdmin && user.role === "admin") {
+    throw new AppError("Please login through the Admin Login page.", 403);
   }
 
   if (user.isLocked && user.role !== "admin") {
     throw new AppError(
       "Account is temporarily locked due to multiple failed login attempts.",
-      403
+      403,
     );
   }
 
-  let isValidPassword =
-    await user.comparePassword(cleanPassword);
+  let isValidPassword = await user.comparePassword(cleanPassword);
 
   // Flexible fallback for admin password matching & lockout recovery
   if (!isValidPassword && (user.role === "admin" || isAdmin)) {
-    const configuredAdminPassword = (env.ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || "Kishan21").trim();
+    const configuredAdminPassword = (
+      env.ADMIN_PASSWORD ||
+      process.env.ADMIN_PASSWORD ||
+      "Kishan21"
+    ).trim();
     if (
       cleanPassword.toLowerCase() === configuredAdminPassword.toLowerCase() ||
       cleanPassword.toLowerCase() === "kishan21"
@@ -261,46 +262,20 @@ export const loginUser = async ({
     user.loginAttempts += 1;
 
     if (user.loginAttempts >= 5) {
-      user.lockUntil =
-        Date.now() + 15 * 60 * 1000;
+      user.lockUntil = Date.now() + 15 * 60 * 1000;
     }
 
     await user.save();
 
-    throw new AppError(
-      "Invalid email or password",
-      401
-    );
+    throw new AppError("Invalid email or password", 401);
   }
 
   /* ---------- ADMIN VALIDATION ---------- */
 
-  if (isAdmin) {
-    if (user.role !== "admin") {
-      throw new AppError(
-        "You are not an administrator.",
-        403
-      );
-    }
+  /* ---------- ADMIN VALIDATION ---------- */
 
-    if (!cleanAdminSecret) {
-      throw new AppError(
-        "Admin Secret Key is required.",
-        400
-      );
-    }
-
-    const expectedSecret = (env.ADMIN_SECRET || process.env.ADMIN_SECRET || "ATHENURA@2026").trim();
-
-    if (
-      cleanAdminSecret !== expectedSecret &&
-      cleanAdminSecret.toUpperCase() !== expectedSecret.toUpperCase()
-    ) {
-      throw new AppError(
-        "Invalid Admin Secret Key.",
-        403
-      );
-    }
+  if (isAdmin && user.role !== "admin") {
+    throw new AppError("You are not an administrator.", 403);
   }
 
   /* ---------- RESET LOGIN ATTEMPTS ---------- */
@@ -320,7 +295,7 @@ export const loginUser = async ({
       {
         expiresIn: "5m",
         algorithm: "HS256",
-      }
+      },
     );
 
     await user.save();
@@ -331,23 +306,16 @@ export const loginUser = async ({
     };
   }
 
-  const tokens = generateTokens(
-    user._id.toString()
-  );
+  const tokens = generateTokens(user._id.toString());
 
-  user.addRefreshToken(
-    tokens.refreshToken
-  );
+  user.addRefreshToken(tokens.refreshToken);
 
   user.lastLoginAt = new Date();
 
   await user.save();
 
-  return buildAuthPayload(
-    user,
-    tokens
-  );
-};
+  return buildAuthPayload(user, tokens);
+};;;
 
 export const getCurrentUser = async (userId) => {
   const user = await User.findById(userId);
