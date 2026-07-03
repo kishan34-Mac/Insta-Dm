@@ -71,7 +71,7 @@ app.use(xssSanitize()); // Prevent XSS attacks
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, 
-  max: 200, // relaxed in dev / webhook environments
+  max: process.env.NODE_ENV === "development" ? 2000 : 200, // relaxed in dev / webhook environments
   standardHeaders: true, 
   legacyHeaders: false, 
   message: {
