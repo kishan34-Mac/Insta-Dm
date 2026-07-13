@@ -57,7 +57,7 @@ const envSchema = z.object({
     .string()
     .min(1, "RAZORPAY_WEBHOOK_SECRET is required"),
 
-  ADMIN_SECRET: z.string().default("ATHENURA@2026"),
+  ADMIN_SECRET: z.string().default("DMPILOT@2026"),
 
   ADMIN_EMAIL: z.string().email().default("kishan122@gmail.com"),
 

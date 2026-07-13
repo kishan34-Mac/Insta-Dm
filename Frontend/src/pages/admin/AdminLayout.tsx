@@ -99,7 +99,7 @@ export default function AdminLayout() {
           >
             <img
               src="/assets/athenura-logo.png"
-              alt="Athenura"
+              alt="DMPilot"
               className={cn(
                 "h-7 w-auto object-contain transition-all",
                 sidebarCollapsed && "lg:hidden",

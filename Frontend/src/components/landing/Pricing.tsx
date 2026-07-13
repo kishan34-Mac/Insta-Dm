@@ -50,7 +50,7 @@ export function Pricing() {
   };
 
   return (
-    <section id="pricing" className="py-16 sm:py-24 lg:py-28">
+    <section id="pricing" className="py-10 sm:py-16 lg:py-20">
       <div className="container">
         <div className="text-center max-w-2xl mx-auto mb-16">
           <p className="text-xs font-semibold tracking-widest uppercase text-primary mb-3">Pricing</p>
@@ -71,7 +71,7 @@ export function Pricing() {
               className={cn(
                 "relative rounded-lg p-6 border transition-shadow duration-200 shadow-sm hover:shadow-md",
                 t.popular
-                  ? "border-[#202020] bg-[#1c1c1c] text-white dark:border-primary/30"
+                  ? "border-transparent bg-[#1c1c1c] text-white"
                   : "border-border bg-card text-foreground"
               )}
             >

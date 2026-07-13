@@ -69,7 +69,7 @@ export default function AdminCampaigns() {
         </h1>
 
         <p className="mt-1 text-sm text-muted-foreground">
-          Monitor all campaigns created across the Athenura platform.
+          Monitor all campaigns created across the DMPilot platform.
         </p>
       </div>
 

@@ -32,11 +32,6 @@ export const createCampaign = async (
   next
 ) => {
   try {
-    console.log(
-      "📦 CREATE CAMPAIGN BODY:",
-      req.body
-    );
-
     const {
       name,
       triggerType,

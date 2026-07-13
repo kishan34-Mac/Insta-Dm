@@ -63,7 +63,7 @@ http.interceptors.response.use(
         localStorage.removeItem("user");
 
         window.dispatchEvent(
-          new CustomEvent("athenura:auth-logout")
+          new CustomEvent("dmpilot:auth-logout")
         );
 
         window.location.href =

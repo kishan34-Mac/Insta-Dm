@@ -78,7 +78,7 @@ export default function AdminUsers() {
         </h1>
 
         <p className="mt-1 text-sm text-muted-foreground">
-          View, search, and monitor all Athenura user accounts.
+          View, search, and monitor all DMPilot user accounts.
         </p>
       </div>
 

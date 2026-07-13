@@ -228,12 +228,13 @@ export default function CampaignBuilder() {
       }
 
       navigate("/dashboard/campaigns");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Save campaign error:", error);
 
+      const err = error as { response?: { data?: { message?: string } }; message?: string };
       const errorMsg =
-        error?.response?.data?.message ||
-        error?.message ||
+        err?.response?.data?.message ||
+        err?.message ||
         "Failed to save campaign";
 
       toast.error(errorMsg);

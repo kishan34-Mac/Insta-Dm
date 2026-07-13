@@ -8,10 +8,15 @@ const email = z
   .max(255)
   .transform((value) => value.toLowerCase());
 
+// Enterprise level password requirements
 const password = z
   .string()
   .min(8, "Password must be at least 8 characters")
-  .max(100, "Password is too long");
+  .max(100, "Password is too long")
+  .refine(
+    (val) => /[A-Z]/.test(val) && /[a-z]/.test(val) && /[0-9]/.test(val),
+    { message: "Password must contain at least one uppercase letter, one lowercase letter, and one number" }
+  );
 
 export const registerSchema = z.object({
   body: z.object({
@@ -21,56 +26,65 @@ export const registerSchema = z.object({
     plan: z.enum(["free", "starter", "pro", "agency"]).optional(),
     isAdmin: z.boolean().optional(),
     adminSecret: z.string().optional(),
-  }),
+  }).strict(),
 });
 
 export const loginSchema = z.object({
   body: z.object({
     email,
-    password,
+    password: z.string().min(1, "Password required"),
     isAdmin: z.boolean().optional(),
     adminSecret: z.string().optional(),
-  }),
+  }).strict(),
 });
 
-export const refreshTokenSchema = z.object({});
+export const refreshTokenSchema = z.object({
+  body: z.object({}).strict(),
+  query: z.object({}).strict(),
+});
 
-export const logoutSchema = z.object({});
+export const logoutSchema = z.object({
+  body: z.object({}).strict(),
+  query: z.object({}).strict(),
+});
 
 export const googleAuthSchema = z.object({
   body: z.object({
     credential: z.string().min(1, "Google credential is required"),
     mode: z.enum(["login", "signup"]),
     plan: z.enum(["free", "starter", "pro", "agency"]).optional(),
-  }),
+  }).strict(),
 });
 
 export const forgotPasswordSchema = z.object({
   body: z.object({
     email,
-  }),
+  }).strict(),
 });
 
 export const resetPasswordSchema = z.object({
   body: z.object({
     token: z.string().min(1, "Reset token is required"),
     password,
-  }),
+  }).strict(),
 });
 
 export const verifyEmailSchema = z.object({
   query: z.object({
     token: z.string().min(1, "Verification token is required"),
-  }),
+  }).strict(),
 });
 
 export const resendVerificationSchema = z.object({
   body: z.object({
     email,
-  }),
+  }).strict(),
 });
 
-export const mfaSetupSchema = z.object({});
+export const mfaSetupSchema = z.object({
+  body: z.object({}).strict(),
+  query: z.object({}).strict(),
+});
 
 export const mfaVerifySchema = z.object({
   body: z
@@ -79,6 +93,7 @@ export const mfaVerifySchema = z.object({
       tempToken: z.string().min(1, "MFA session token is required").optional(),
       recoveryCode: z.string().min(1, "Recovery code is required").optional(),
     })
+    .strict()
     .refine((data) => data.code || data.recoveryCode, {
       message: "Either MFA code or recovery code must be provided",
     }),

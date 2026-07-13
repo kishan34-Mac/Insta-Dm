@@ -17,12 +17,12 @@ import { Link } from "react-router-dom";
 const FooterLink = ({ href, children }: { href: string; children: React.ReactNode }) => {
   return (
     <li>
-      <a
-        href={href}
+      <Link
+        to={href}
         className="text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         {children}
-      </a>
+      </Link>
     </li>
   );
 };
@@ -51,17 +51,17 @@ const SocialLink = ({
 
 export function Footer() {
   const productLinks = [
-    ["Features", "#features"],
-    ["Pricing", "#pricing"],
-    ["Integrations", "#"],
-    ["Analytics", "#"],
+    ["Features", "/features"],
+    ["Pricing", "/pricing"],
+    ["Integrations", "/integrations"],
+    ["Analytics", "/analytics"],
   ] as const;
 
   const resourcesLinks = [
-    ["How it works", "#how"],
-    ["Documentation", "#"],
-    ["API Reference", "#"],
-    ["Community", "#"],
+    ["How it works", "/how-it-works"],
+    ["Documentation", "/docs"],
+    ["API Reference", "/api-reference"],
+    ["Community", "/community"],
   ] as const;
 
   return (
@@ -80,7 +80,7 @@ export function Footer() {
               <div className="lg:col-span-1">
 
                 <div className="mt-4">
-                  <img src="/assets/athenura-logo.png" alt="Athenura" className="h-7 w-auto object-contain dark:brightness-0 dark:invert transition-all" />
+                  <img src="/assets/athenura-logo.png" alt="DMPilot" className="h-7 w-auto object-contain dark:brightness-0 dark:invert transition-all" />
                 </div>
                 <p className="mt-2 max-w-xs text-sm text-muted-foreground">
                   Turn Instagram comments into paying customers automatically.
@@ -134,19 +134,19 @@ export function Footer() {
                 <h4 className="text-sm font-semibold text-muted-foreground">Company</h4>
                 <ul className="mt-4 space-y-2">
                   <li>
-                    <a href="#" className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
+                    <Link to="/about" className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
                       About
-                    </a>
+                    </Link>
                   </li>
                   <li>
-                    <a href="#" className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
+                    <Link to="/careers" className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
                       Careers
-                    </a>
+                    </Link>
                   </li>
                   <li>
-                    <a href="#" className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
+                    <Link to="/contact" className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
                       Contact
-                    </a>
+                    </Link>
                   </li>
                 </ul>
               </div>
@@ -198,21 +198,51 @@ export function Footer() {
 
 
             {/* bottom bar */}
-            <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <p className="text-xs text-muted-foreground">© {2026} Athenura. All rights reserved.</p>
-
-              <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
-                <a href="/privacy" className="transition-colors hover:text-foreground">
-                  Privacy
-                </a>
-                <a href="/terms" className="transition-colors hover:text-foreground">
-                  Terms
-                </a>
-                <a href="#" className="transition-colors hover:text-foreground">
-                  Cookies
-                </a>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              className="mt-4 grid grid-cols-1 sm:grid-cols-3 sm:gap-4 items-center justify-between gap-3 text-xs text-muted-foreground w-full"
+            >
+              <div className="text-center sm:text-left order-1">
+                <p>© 2026 DMPilot. All Rights Reserved.</p>
               </div>
-            </div>
+              
+              <div className="text-center order-2">
+                <span className="inline-flex items-center gap-1">
+                  Design and Created by{" "}
+                  <a
+                    href="https://www.athenura.in"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Visit Athenura website"
+                    className="relative inline-flex items-center gap-0.5 font-semibold text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-purple-500 to-blue-500 hover:brightness-110 active:brightness-125 transition-all duration-300 hover:scale-[1.03] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none rounded px-0.5 after:absolute after:bottom-0 after:left-0 after:h-[1.5px] after:w-full after:origin-left after:scale-x-0 after:bg-gradient-to-r after:from-indigo-500 after:to-blue-500 after:transition-transform after:duration-300 hover:after:scale-x-100"
+                  >
+                    Athenura
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3 inline text-purple-500 select-none">
+                      <path d="M15 3h6v6" />
+                      <path d="M10 14 21 3" />
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                    </svg>
+                  </a>
+                </span>
+              </div>
+
+              <div className="flex justify-center sm:justify-end order-3 gap-4">
+                <Link to="/privacy" className="transition-colors hover:text-foreground">
+                  Privacy
+                </Link>
+                <span className="text-muted-foreground/30 select-none">•</span>
+                <Link to="/terms" className="transition-colors hover:text-foreground">
+                  Terms
+                </Link>
+                <span className="text-muted-foreground/30 select-none">•</span>
+                <Link to="/cookies" className="transition-colors hover:text-foreground">
+                  Cookies
+                </Link>
+              </div>
+            </motion.div>
 
           </motion.div>
         </div>

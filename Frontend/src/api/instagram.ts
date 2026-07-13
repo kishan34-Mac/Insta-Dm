@@ -20,7 +20,7 @@ export const connectInstagram =
   async (): Promise<void> => {
     const auth = JSON.parse(
       localStorage.getItem(
-        "athenura.auth"
+        "dmpilot.auth"
       ) || "{}"
     );
 

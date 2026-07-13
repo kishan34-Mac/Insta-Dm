@@ -24,22 +24,13 @@ export default function Signup() {
 
   const { register: registerUser } = useAuth();
 
-  const [isAdmin, setIsAdmin] = useState(false);
-
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors, isSubmitting },
   } = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
-    defaultValues: {
-      isAdmin: false,
-      adminSecret: "",
-    },
   });
-
-  const adminSecret = watch("adminSecret");
 
   const onSubmit = async (data: SignupFormData) => {
     const toastId = "signup-toast";
@@ -54,21 +45,13 @@ export default function Signup() {
         email: data.email,
         password: data.password,
         plan,
-
-        isAdmin,
-        adminSecret:
-          isAdmin ? adminSecret : undefined,
       });
 
       toast.success("Account created successfully.", {
         id: toastId,
       });
 
-      if (isAdmin) {
-        navigate("/admin");
-      } else {
-        navigate("/dashboard");
-      }
+      navigate("/dashboard");
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -82,8 +65,8 @@ export default function Signup() {
   };
 
   return (<AuthShell
-    title="Create your account"
-    subtitle="Start your 14-day Pro trial — no card needed"
+    title="Create Your DMPilot Workspace"
+    subtitle="Start automating Instagram conversations in minutes."
     footer={
       <>
         Already have an account?{" "}
@@ -171,52 +154,6 @@ export default function Signup() {
           <p className="mt-1 text-xs text-destructive">
             {errors.password.message}
           </p>
-        )}
-      </div>
-
-      {/* Register as Admin */}
-      <div className="rounded-lg border border-border p-4">
-        <label className="flex cursor-pointer items-center gap-3">
-          <input
-            type="checkbox"
-            checked={isAdmin}
-            onChange={(e) => {
-              setIsAdmin(e.target.checked);
-            }}
-            className="h-4 w-4"
-          />
-
-          <div>
-            <p className="font-medium">
-              Register as Admin
-            </p>
-
-            <p className="text-xs text-muted-foreground">
-              Only users having the secret key
-              can register as administrators.
-            </p>
-          </div>
-        </label>
-
-        {isAdmin && (
-          <div className="mt-4">
-            <Label htmlFor="adminSecret">
-              Secret Key
-            </Label>
-
-            <Input
-              id="adminSecret"
-              type="password"
-              placeholder="Enter Admin Secret"
-              {...register("adminSecret")}
-            />
-
-            {errors.adminSecret && (
-              <p className="mt-1 text-xs text-destructive">
-                {errors.adminSecret.message}
-              </p>
-            )}
-          </div>
         )}
       </div>
 

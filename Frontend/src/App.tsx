@@ -1,6 +1,6 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 
 
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -21,6 +21,20 @@ const Index = lazy(() => import("./pages/Index"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
+const Cookies = lazy(() => import("./pages/Cookies"));
+
+// Public Pages Added for Footer Links
+const Features = lazy(() => import("./pages/Features"));
+const Pricing = lazy(() => import("./pages/Pricing"));
+const Integrations = lazy(() => import("./pages/Integrations"));
+const PublicAnalytics = lazy(() => import("./pages/Analytics"));
+const HowItWorks = lazy(() => import("./pages/HowItWorks"));
+const Documentation = lazy(() => import("./pages/Documentation"));
+const ApiReference = lazy(() => import("./pages/ApiReference"));
+const Community = lazy(() => import("./pages/Community"));
+const About = lazy(() => import("./pages/About"));
+const Careers = lazy(() => import("./pages/Careers"));
+const Contact = lazy(() => import("./pages/Contact"));
 
 const Login = lazy(() => import("./pages/auth/Login"));
 const Signup = lazy(() => import("./pages/auth/Signup"));
@@ -46,6 +60,17 @@ const AdminCampaigns = lazy(() => import("./pages/admin/AdminCampaigns"));
 
 const queryClient = new QueryClient();
 
+// Scroll helper to reset page position on transition
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+}
+
 export default function App() {
   const googleClientId =
     import.meta.env.VITE_GOOGLE_CLIENT_ID ||
@@ -63,6 +88,7 @@ export default function App() {
 
             <GoogleOAuthProvider clientId={googleClientId}>
               <BrowserRouter>
+                <ScrollToTop />
                 <Suspense
                   fallback={
                     <div className="min-h-screen bg-background" />
@@ -73,6 +99,18 @@ export default function App() {
                     <Route path="/" element={<Index />} />
                     <Route path="/privacy" element={<Privacy />} />
                     <Route path="/terms" element={<Terms />} />
+                    <Route path="/cookies" element={<Cookies />} />
+                    <Route path="/features" element={<Features />} />
+                    <Route path="/pricing" element={<Pricing />} />
+                    <Route path="/integrations" element={<Integrations />} />
+                    <Route path="/analytics" element={<PublicAnalytics />} />
+                    <Route path="/how-it-works" element={<HowItWorks />} />
+                    <Route path="/docs" element={<Documentation />} />
+                    <Route path="/api-reference" element={<ApiReference />} />
+                    <Route path="/community" element={<Community />} />
+                    <Route path="/about" element={<About />} />
+                    <Route path="/careers" element={<Careers />} />
+                    <Route path="/contact" element={<Contact />} />
 
                     {/* Authentication */}
                     <Route element={<PublicOnlyRoute />}>

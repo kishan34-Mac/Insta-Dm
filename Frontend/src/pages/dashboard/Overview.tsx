@@ -119,7 +119,7 @@ export default function Overview() {
             Welcome back, {firstName} 👋
           </h2>
           <p className="text-muted-foreground text-sm mt-1">
-            Real-time analytics and Instagram keyword automation campaign tracker.
+            Let's grow your Instagram today.
           </p>
         </div>
         {error && (
@@ -142,7 +142,7 @@ export default function Overview() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="font-semibold text-lg text-foreground">DMs vs Leads</h3>
-              <p className="text-xs text-muted-foreground">Activity distribution over last 14 days</p>
+              <p className="text-xs text-muted-foreground">Make smarter decisions using live campaign insights.</p>
             </div>
           </div>
           <div className="h-72">
@@ -191,7 +191,7 @@ export default function Overview() {
 
         <div className="glass-card glass-card-hover p-6">
           <h3 className="font-semibold text-lg text-foreground">Top campaigns</h3>
-          <p className="text-xs text-muted-foreground">Ranked by messages sent</p>
+          <p className="text-xs text-muted-foreground">Monitor every automation in real time.</p>
           <div className="h-72 mt-2">
             {!data?.charts?.campaignBars || data.charts.campaignBars.length === 0 ? (
               <div className="h-full flex items-center justify-center text-xs text-muted-foreground">

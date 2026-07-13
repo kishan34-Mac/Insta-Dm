@@ -89,8 +89,8 @@ export default function Login() {
 
   return (
     <AuthShell
-      title="Welcome back"
-      subtitle="Sign in to your Athenura account"
+      title="Welcome Back"
+      subtitle="Sign in to manage your Instagram automation platform."
       footer={
         <>
           Don't have an account?{" "}
@@ -188,7 +188,7 @@ export default function Login() {
             <Loader2 className="h-4 w-4 animate-spin sm:h-5 sm:w-5" />
           ) : (
             <>
-              Sign in
+              Continue to Dashboard
               <ArrowRight className="ml-1.5 h-4 w-4" />
             </>
           )}

@@ -113,10 +113,10 @@ export function AuthProvider({
       applyAuthPayload(null);
     };
 
-    window.addEventListener("athenura:auth-logout", handleAuthLogout);
+    window.addEventListener("dmpilot:auth-logout", handleAuthLogout);
 
     return () =>
-      window.removeEventListener("athenura:auth-logout", handleAuthLogout);
+      window.removeEventListener("dmpilot:auth-logout", handleAuthLogout);
   }, [applyAuthPayload]);
 
   const login = useCallback(

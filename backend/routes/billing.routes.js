@@ -1,6 +1,7 @@
 import express from "express";
-
 import { protect } from "../middleware/auth.middleware.js";
+import { validate } from "../validators/auth.validator.js";
+import { createOrderSchema, verifyPaymentSchema } from "../validators/billing.validator.js";
 import {
   createRazorpayOrder,
   verifyRazorpayPayment,
@@ -11,12 +12,14 @@ const router = express.Router();
 router.post(
   "/razorpay/create-order",
   protect,
+  validate(createOrderSchema),
   createRazorpayOrder
 );
 
 router.post(
   "/razorpay/verify",
   protect,
+  validate(verifyPaymentSchema),
   verifyRazorpayPayment
 );
 

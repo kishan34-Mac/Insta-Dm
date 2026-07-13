@@ -16,6 +16,9 @@ import Campaign from "../models/Campaign.js";
 import InstagramAccount from "../models/instagramAccount.model.js";
 import Lead from "../models/Lead.js";
 
+import { validate } from "../validators/auth.validator.js";
+import { disconnectInstagramSchema, webhookVerificationSchema } from "../validators/instagram.validator.js";
+
 const router = express.Router();
 
 router.get("/health", (req, res) => {
@@ -31,9 +34,9 @@ router.get("/callback", instagramCallback);
 
 router.get("/accounts", protect, getInstagramAccounts);
 
-router.delete("/disconnect/:igUserId", protect, disconnectInstagram);
+router.delete("/disconnect/:igUserId", protect, validate(disconnectInstagramSchema), disconnectInstagram);
 
-router.get("/webhook", handleWebhookVerification);
+router.get("/webhook", validate(webhookVerificationSchema), handleWebhookVerification);
 
 router.post("/webhook", handleWebhookEvent);
 

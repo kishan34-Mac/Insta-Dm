@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700;800&family=Sora:wght@700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,9 +6,9 @@
 
 @layer base {
   :root {
-    /* Light mode — Supabase technical clean */
-    --background: 0 0% 100%;
-    --foreground: 0 0% 9%;
+    /* Light mode — Supabaze clean canvas */
+    --background: 0 0% 100%; /* #ffffff */
+    --foreground: 0 0% 9%; /* #171717 near-black text */
 
     --card: 0 0% 100%;
     --card-foreground: 0 0% 9%;
@@ -16,7 +16,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 9%;
 
-    --primary: 153 60% 53%; /* #3ecf8e */
+    --primary: 153 60% 53%; /* #3ecf8e Emerald Green */
     --primary-foreground: 0 0% 9%; /* #171717 near-black text on green */
     --primary-glow: 153 60% 63%;
 
@@ -24,37 +24,37 @@
     --secondary-foreground: 0 0% 9%;
 
     --muted: 0 0% 98%;
-    --muted-foreground: 0 0% 44%; /* #707070 */
+    --muted-foreground: 0 0% 44%; /* #707070 ink-mute */
 
-    --accent: 0 0% 93%; /* #ededed */
+    --accent: 0 0% 93%; /* #ededed hairline-cool */
     --accent-foreground: 0 0% 9%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 153 60% 42%;
+    --success: 153 60% 53%; /* #3ecf8e */
     --success-foreground: 0 0% 9%;
 
-    --warning: 38 95% 55%;
+    --warning: 38 92% 50%; /* #ffdb13 style warning */
     --warning-foreground: 0 0% 9%;
 
-    --border: 0 0% 87%; /* #dfdfdf */
-    --input: 0 0% 93%; /* #ededed */
+    --border: 0 0% 87%; /* #dfdfdf hairline */
+    --input: 0 0% 93%; /* #ededed input background */
     --ring: 153 60% 53%;
 
-    --radius: 12px;
+    --radius: 12px; /* Restored to support 12px/8px/6px scaling */
 
-    /* Surfaces & glass styling aligned to Supabase minimal borders */
+    /* Surfaces & glass styling aligned to Supabaze minimal borders */
     --surface: 0 0% 98%;
     --surface-elevated: 0 0% 100%;
-    --glass: 0 0% 100% / 0.9;
-    --glass-border: 0 0% 87% / 0.9;
+    --glass: 0 0% 100% / 0.95;
+    --glass-border: 0 0% 87% / 0.95;
 
-    /* Gradients — mapped to solids/emerald to maintain system support */
-    --gradient-primary: linear-gradient(135deg, hsl(153 60% 53%), hsl(153 60% 42%));
+    /* Gradients — Monochrome / Emerald signature gradient */
+    --gradient-primary: linear-gradient(135deg, hsl(153 60% 53%), hsl(160 67% 42%));
     --gradient-accent: linear-gradient(135deg, hsl(153 60% 53%), hsl(0 0% 9%));
-    --gradient-mesh: radial-gradient(at 20% 20%, hsl(153 60% 53% / 0.03) 0px, transparent 50%),
-                     radial-gradient(at 80% 80%, hsl(153 60% 42% / 0.02) 0px, transparent 50%);
+    --gradient-mesh: radial-gradient(at 20% 20%, hsl(153 60% 53% / 0.02) 0px, transparent 50%),
+                     radial-gradient(at 80% 80%, hsl(153 60% 53% / 0.01) 0px, transparent 50%);
     --gradient-text: linear-gradient(135deg, hsl(0 0% 9%), hsl(0 0% 20%));
 
     /* Technical grey-scale hair shadows */
@@ -78,17 +78,17 @@
   }
 
   .dark {
-    /* Dark mode — Supabase technical dark canvas-night */
+    /* Dark mode — Canvas Night */
     --background: 0 0% 11%; /* #1c1c1c */
     --foreground: 0 0% 100%; /* #ffffff */
 
-    --card: 0 0% 11%;
+    --card: 0 0% 11%; /* #1c1c1c */
     --card-foreground: 0 0% 100%;
 
-    --popover: 0 0% 13%; /* #202020 */
+    --popover: 0 0% 13%; /* #202020 night-soft */
     --popover-foreground: 0 0% 100%;
 
-    --primary: 153 60% 53%;
+    --primary: 153 60% 53%; /* #3ecf8e */
     --primary-foreground: 0 0% 9%;
     --primary-glow: 153 60% 63%;
 
@@ -104,10 +104,10 @@
     --destructive: 0 75% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 153 60% 50%;
+    --success: 153 60% 53%;
     --success-foreground: 0 0% 9%;
 
-    --warning: 38 95% 60%;
+    --warning: 38 92% 50%;
     --warning-foreground: 0 0% 9%;
 
     --border: 0 0% 18%; /* Subtle dark grey border */
@@ -116,13 +116,13 @@
 
     --surface: 0 0% 11%;
     --surface-elevated: 0 0% 13%;
-    --glass: 0 0% 13% / 0.9;
-    --glass-border: 0 0% 18% / 0.9;
+    --glass: 0 0% 13% / 0.95;
+    --glass-border: 0 0% 18% / 0.95;
 
-    --gradient-primary: linear-gradient(135deg, hsl(153 60% 53%), hsl(153 60% 42%));
+    --gradient-primary: linear-gradient(135deg, hsl(153 60% 53%), hsl(160 67% 42%));
     --gradient-accent: linear-gradient(135deg, hsl(153 60% 53%), hsl(0 0% 100%));
-    --gradient-mesh: radial-gradient(at 20% 20%, hsl(153 60% 53% / 0.04) 0px, transparent 50%),
-                     radial-gradient(at 80% 80%, hsl(153 60% 42% / 0.02) 0px, transparent 50%);
+    --gradient-mesh: radial-gradient(at 20% 20%, hsl(153 60% 53% / 0.02) 0px, transparent 50%),
+                     radial-gradient(at 80% 80%, hsl(153 60% 53% / 0.01) 0px, transparent 50%);
     --gradient-text: linear-gradient(135deg, hsl(0 0% 100%), hsl(0 0% 90%));
 
     --shadow-sm: 0 1px 3px rgba(0,0,0,0.2);

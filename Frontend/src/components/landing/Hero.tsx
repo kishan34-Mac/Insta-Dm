@@ -5,125 +5,118 @@ import { Button } from "@/components/ui/button";
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden pb-16 pt-28 sm:pb-24 sm:pt-36">
-      <div className="absolute inset-0 grid-pattern opacity-30 pointer-events-none" />
+    <section className="relative overflow-hidden pb-16 pt-24 sm:pb-24 sm:pt-32 bg-background flex flex-col justify-center border-b border-border/40">
+      {/* Clean Technical Greyscale Grid Pattern */}
+      <div className="absolute inset-0 grid-pattern opacity-[0.15] pointer-events-none" />
 
-      <div className="container relative">
-        <div className="max-w-4xl mx-auto text-center">
-          <motion.h1
-            initial={{ opacity: 0, y: 24 }}
+      <div className="container relative max-w-[1280px]">
+        <div className="max-w-4xl mx-auto text-center flex flex-col items-center">
+          
+          {/* Supabaze Neutral Pill Tag */}
+          {/* <motion.div
+            initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-medium tracking-[-0.03em] text-balance leading-[1.05]"
+            transition={{ duration: 0.4 }}
+            className="inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-full border border-border/80 bg-secondary/50 text-muted-foreground shadow-sm hover:border-border transition-colors cursor-default scale-95 sm:scale-100"
           >
-            Turn Instagram comments into{" "}
-            <span className="text-primary font-medium">paying customers</span>{" "}
-            automatically.
+            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+            <span className="font-mono text-[10px] uppercase tracking-wider text-foreground/80">✨ AI-Powered Instagram Automation</span>
+          </motion.div> */}
+
+          {/* DMPilot Centerpiece Logo */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="relative mt-8 mb-6 inline-block select-none"
+          >
+            <span className="font-display text-7xl sm:text-8xl md:text-9xl font-semibold tracking-[-0.04em] block leading-none text-foreground">
+              DM<span className="text-primary font-semibold">Pilot</span>
+            </span>
+          </motion.div>
+
+          {/* Headline with negative display tracking */}
+          <motion.h1
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-semibold tracking-[-0.035em] text-balance leading-[1.1] text-foreground font-sans"
+          >
+            Automate Every Instagram Conversation.
           </motion.h1>
 
+          {/* Subheading */}
           <motion.p
-            initial={{ opacity: 0, y: 24 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="mt-5 sm:mt-6 text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto text-balance px-2"
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="mt-6 text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto text-balance leading-relaxed"
           >
-            Athenura auto-DMs every comment, captures leads, and converts
-            followers with intelligent funnels — all from one beautiful
-            dashboard.
+            Turn comments into customers with AI-powered direct messages, intelligent lead capture, and real-time campaign automation.
           </motion.p>
 
-          {/* Social proof + live stats */}
+          {/* CTA Buttons - Signature 6px button radius */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.25 }}
-            className="mt-8 sm:mt-10 px-4 sm:px-0"
+            transition={{ duration: 0.5, delay: 0.4 }}
+            className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 w-full sm:w-auto px-4 sm:px-0"
           >
-            <div className="mx-auto max-w-2xl">
-              <div className="rounded-lg border border-border bg-card px-4 py-3 shadow-sm">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-base">⭐⭐⭐⭐⭐</span>
-                    <p className="text-sm font-medium text-foreground">
-                      Trusted by 12,000+ creators
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-4">
-                    <div className="text-xs">
-                      <p className="text-sm font-semibold text-foreground leading-none">
-                        47,281
-                      </p>
-                      <p className="text-muted-foreground leading-none">
-                        DMs Sent Today
-                      </p>
-                    </div>
-
-                    <div className="hidden sm:block h-10 w-px bg-border" />
-
-                    <div className="text-xs">
-                      <p className="text-sm font-semibold text-foreground leading-none">
-                        12,142
-                      </p>
-                      <p className="text-muted-foreground leading-none">
-                        Leads Captured
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* CTA buttons */}
-            <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.35 }}
-              className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3"
+            <Button
+              variant="hero"
+              size="lg"
+              asChild
+              className="w-full sm:w-auto rounded-sm"
             >
-              <Button
-                variant="hero"
-                size="xl"
-                asChild
-                className="w-full sm:w-auto"
-              >
-                <Link to="/signup">
-                  Start free trial <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
+              <Link to="/signup">
+                Start Free 
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
 
-              <Button
-                variant="outline"
-                size="xl"
-                asChild
-                className="w-full sm:w-auto"
-              >
-                <a href="#how">See how it works</a>
-              </Button>
-            </motion.div>
+            <Button
+              variant="outline"
+              size="lg"
+              asChild
+              className="w-full sm:w-auto rounded-sm border border-border hover:bg-secondary transition-colors text-foreground"
+            >
+              <Link to="/contact">Book a Demo</Link>
+            </Button>
           </motion.div>
 
-          <motion.p
+          {/* Trust Indicators */}
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="mt-4 text-xs text-muted-foreground"
+            transition={{ duration: 0.5, delay: 0.5 }}
+            className="mt-8 flex flex-col items-center gap-2"
           >
-            No credit card required · 14-day Pro trial · Cancel anytime
-          </motion.p>
+            <div className="flex items-center gap-1">
+              <span className="text-primary text-xs">★</span>
+              <span className="text-primary text-xs">★</span>
+              <span className="text-primary text-xs">★</span>
+              <span className="text-primary text-xs">★</span>
+              <span className="text-primary text-xs">★</span>
+            </div>
+            <p className="text-xs font-semibold text-muted-foreground/80 tracking-wide uppercase font-mono">
+              Trusted by creators, agencies & businesses
+            </p>
+          </motion.div>
+
         </div>
 
-        {/* Animated UI preview */}
+        {/* Animated UI preview in Level 2 elevation card */}
         <motion.div
-          initial={{ opacity: 0, y: 50 }}
+          initial={{ opacity: 0, y: 32 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          className="mt-14 sm:mt-20 relative max-w-5xl mx-auto"
+          transition={{ duration: 0.7, delay: 0.55 }}
+          className="mt-16 sm:mt-24 max-w-5xl mx-auto"
         >
           <div className="relative border border-border bg-card p-3 sm:p-4 md:p-6 rounded-lg shadow-md">
             <DmFlowPreview />
           </div>
         </motion.div>
+
       </div>
     </section>
   );

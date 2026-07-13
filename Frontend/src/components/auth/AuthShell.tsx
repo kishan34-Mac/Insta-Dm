@@ -21,7 +21,7 @@ export function AuthShell({
       <GradientMesh className="opacity-90" animate={true} />
 
       <header className="absolute top-0 inset-x-0 z-10 flex items-center justify-between gap-4 p-4 sm:p-6 w-full max-w-7xl mx-auto">
-        <Link to="/" aria-label="Athenura home">
+        <Link to="/" aria-label="DMPilot home">
           <BrandLogo animated className="h-8 w-auto sm:h-10" />
         </Link>
         <ThemeToggle />

@@ -39,8 +39,6 @@ export const connectInstagram = async (req, res) => {
       `&response_type=code` +
       `&state=${token}`;
 
-    console.log("INSTAGRAM AUTH URL:", authUrl);
-
     return res.redirect(authUrl);
   } catch (error) {
     console.error("CONNECT INSTAGRAM ERROR:", error.message);
@@ -54,9 +52,6 @@ export const connectInstagram = async (req, res) => {
 export const instagramCallback = async (req, res) => {
   try {
     const { code, state } = req.query;
-
-    console.log("CALLBACK CODE:", code);
-    console.log("CALLBACK STATE:", state);
 
     if (!code) {
       return res.redirect(
@@ -81,8 +76,6 @@ export const instagramCallback = async (req, res) => {
       }
     );
 
-    console.log("TOKEN RESPONSE:", tokenResponse.data);
-
     const accessToken = tokenResponse.data.access_token;
 
     // Fetch managed Facebook pages
@@ -94,8 +87,6 @@ export const instagramCallback = async (req, res) => {
         },
       }
     );
-
-    console.log("PAGES RESPONSE:", pagesResponse.data);
 
     const pages = pagesResponse.data.data;
 
@@ -118,8 +109,6 @@ export const instagramCallback = async (req, res) => {
       }
     );
 
-    console.log("IG BUSINESS RESPONSE:", igBusinessResponse.data);
-
     const igBusiness = igBusinessResponse.data.instagram_business_account;
 
     if (!igBusiness?.id) {
@@ -138,8 +127,6 @@ export const instagramCallback = async (req, res) => {
         },
       }
     );
-
-    console.log("IG PROFILE:", igProfileResponse.data);
 
     const igProfile = igProfileResponse.data;
 
@@ -189,8 +176,6 @@ export const instagramCallback = async (req, res) => {
       console.warn("User instagramAccounts sync error:", userSyncErr.message);
     }
 
-    console.log("ACCOUNT SAVED:", savedAccount);
-
     // Subscribe page to Facebook webhook events
     try {
       const subscribeResponse = await axios.post(
@@ -203,8 +188,6 @@ export const instagramCallback = async (req, res) => {
           },
         }
       );
-
-      console.log("✅ WEBHOOK SUBSCRIBED:", subscribeResponse.data);
 
       savedAccount.webhookSubscribed = true;
       await savedAccount.save();
@@ -281,8 +264,6 @@ export const handleWebhookVerification = async (req, res) => {
     const verifyToken = env.META_VERIFY_TOKEN || process.env.META_WEBHOOK_VERIFY_TOKEN;
 
     console.log("📩 WEBHOOK VERIFY REQUEST");
-    console.log("EXPECTED TOKEN:", verifyToken);
-    console.log("RECEIVED TOKEN:", token);
 
     if (
       mode === "subscribe" &&

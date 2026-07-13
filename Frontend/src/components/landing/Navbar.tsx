@@ -50,9 +50,9 @@ export function Navbar() {
   }, []);
 
   const links = [
-    { href: "#features", id: "features", label: "Features" },
-    { href: "#how", id: "how", label: "How it works" },
-    { href: "#pricing", id: "pricing", label: "Pricing" },
+    { href: "/#features", id: "features", label: "Features" },
+    { href: "/#how", id: "how", label: "How it works" },
+    { href: "/#pricing", id: "pricing", label: "Pricing" },
   ];
 
   const UserMenu = () => (
@@ -109,7 +109,7 @@ export function Navbar() {
           <Link
             to="/"
             className="flex min-w-0 items-center group shrink-0"
-            aria-label="Athenura home"
+            aria-label="DMPilot home"
           >
             <BrandLogo animated />
           </Link>
